@@ -142,6 +142,7 @@
     <ClCompile Include="..\libraries\glad\src\glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
+    <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\shaders\fragment.glsl" />
@@ -149,6 +150,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ModelLoader.h" />
+    <ClInclude Include="Shader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

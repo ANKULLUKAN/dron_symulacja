@@ -4,8 +4,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
-
-#include "ModelLoader.h"  // <-- nasz nowy plik z ładowaniem modelu
+#include "Shader.h"
+#include "ModelLoader.h"
 
 float yaw = 0.0f, pitch = 0.0f;
 float lastX = 400, lastY = 300;
@@ -64,31 +64,9 @@ const char* fragmentShaderSource = R"(
 #version 330 core
 out vec4 FragColor;
 void main() {
-    FragColor = vec4(0.3, 0.4, 1.0, 0.50);
+    FragColor = vec4(0.3, 0.4, 1.0, 0.5);
 }
 )";
-
-GLuint createShader(GLenum type, const char* source) {
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, nullptr);
-    glCompileShader(shader);
-    return shader;
-}
-
-void drawNode(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram) {
-    glm::mat4 globalTransform = parentTransform * node.transform;
-
-    for (unsigned int i : node.meshIndices) {
-        const Mesh& mesh = meshes[i];
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(globalTransform));
-        glBindVertexArray(mesh.VAO);
-        glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
-    }
-
-    for (const Node& child : node.children) {
-        drawNode(child, globalTransform, shaderProgram);
-    }
-}
 
 int main() {
     glfwInit();
@@ -104,13 +82,7 @@ int main() {
 
     if (!loadModel("E:/projektyCpp/Projekt_obiektowka/x64/Debug/model/result.gltf")) return -1;
 
-    GLuint vertexShader = createShader(GL_VERTEX_SHADER, vertexShaderSource);
-    GLuint fragmentShader = createShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
+    Shader shader(vertexShaderSource, fragmentShaderSource);
     glEnable(GL_DEPTH_TEST);
 
     while (!glfwWindowShouldClose(window)) {
@@ -126,11 +98,11 @@ int main() {
         glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 100.0f);
 
-        glUseProgram(shaderProgram);
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        shader.use();
+        shader.setMat4("view", view);
+        shader.setMat4("projection", projection);
 
-        drawNode(rootNode, glm::mat4(1.0f), shaderProgram);
+        drawNode(rootNode, glm::mat4(1.0f), shader.ID);
 
         glfwSwapBuffers(window);
     }

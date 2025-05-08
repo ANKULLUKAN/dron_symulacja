@@ -1,6 +1,6 @@
 #pragma once
+
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <string>
 #include <glad/glad.h>
@@ -23,8 +23,12 @@ struct Node {
     std::vector<Node> children;
 };
 
+// globalne kontenery
 extern std::vector<Mesh> meshes;
 extern Node rootNode;
 
+// ³adowanie modelu z pliku
 bool loadModel(const std::string& path);
-#pragma once
+
+// rysowanie ca³ego drzewa sceny
+void drawNode(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram);
