@@ -21,9 +21,6 @@
     <ClCompile Include="..\libraries\glad\src\glad.c">
       <Filter>Pliki zasobów</Filter>
     </ClCompile>
-    <ClCompile Include="..\x64\Debug\int.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\shaders\fragment.glsl" />

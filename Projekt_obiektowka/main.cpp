@@ -9,8 +9,7 @@
 #include <iostream>
 #include <vector>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+
 
 struct Vertex {
     glm::vec3 position;
@@ -192,7 +191,7 @@ int main() {
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
 
-    if (!loadModel("E:/projektyCpp/Projekt_obiektowka/x64/Debug/result.gltf")) return -1;
+    if (!loadModel("E:/projektyCpp/Projekt_obiektowka/x64/Debug/model/result.gltf")) return -1;
 
     GLuint vertexShader = createShader(GL_VERTEX_SHADER, vertexShaderSource);
     GLuint fragmentShader = createShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
