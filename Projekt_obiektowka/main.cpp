@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+
 #include "Shader.h"
 #include "ModelLoader.h"
 
@@ -64,7 +65,7 @@ const char* fragmentShaderSource = R"(
 #version 330 core
 out vec4 FragColor;
 void main() {
-    FragColor = vec4(0.3, 0.4, 1.0, 0.5);
+    FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 )";
 
@@ -87,7 +88,7 @@ int main() {
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
+        glClearColor(0.4f, 0.2f, 0.6f, 0.5f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         float camX = radius * cos(glm::radians(yaw)) * cos(glm::radians(pitch));
