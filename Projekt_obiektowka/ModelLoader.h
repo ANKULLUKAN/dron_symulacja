@@ -31,4 +31,11 @@ extern Node rootNode;
 bool loadModel(const std::string& path);
 
 // rysowanie ca³ego drzewa sceny
-void drawNode(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram);
+
+
+extern std::vector<int> rotatingNodeIndices;
+extern float rotationAngle;
+void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter);
+
+
+

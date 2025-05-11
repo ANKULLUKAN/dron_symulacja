@@ -1,8 +1,9 @@
-#include "ModelLoader.h"
+﻿#include "ModelLoader.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <GLFW/glfw3.h>
 
 std::vector<Mesh> meshes;
 Node rootNode;
@@ -33,7 +34,7 @@ bool loadModel(const std::string& path) {
     for (unsigned int m = 0; m < scene->mNumMeshes; ++m) {
         const aiMesh* mesh = scene->mMeshes[m];
         Mesh myMesh;
-        // wczytaj wierzcho�ki
+        // wczytaj wierzchołki
         for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
             Vertex vertex;
             vertex.position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
@@ -73,15 +74,34 @@ bool loadModel(const std::string& path) {
     return true;
 }
 
-void drawNode(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram) {
-    glm::mat4 globalTransform = parentTransform * node.transform;
+
+int x = 90;
+std::vector<int> rotatingNodeIndices = { x}; // <- zamień na prawidłowe numery node'ów po wypisaniu ich z debugowania
+float rotationAngle = 0.0f;
+
+void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter) {
+    glm::mat4 localTransform = node.transform;
+    
+    if (std::find(rotatingNodeIndices.begin(), rotatingNodeIndices.end(), nodeCounter) != rotatingNodeIndices.end()) {
+        localTransform = glm::rotate(localTransform, glm::radians(rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+
+    glm::mat4 globalTransform = parentTransform * localTransform;
+
     for (unsigned int i : node.meshIndices) {
         const Mesh& mesh = meshes[i];
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"),
-            1, GL_FALSE, glm::value_ptr(globalTransform));
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(globalTransform));
         glBindVertexArray(mesh.VAO);
         glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
     }
-    for (const Node& child : node.children)
-        drawNode(child, globalTransform, shaderProgram);
+
+    int localCounter = nodeCounter;
+    for (const Node& child : node.children) {
+        localCounter++;
+        drawNodeWithRotation(child, globalTransform, shaderProgram, localCounter);
+    }
+
+    nodeCounter++;
 }
+
+

@@ -4,7 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
-
+#include <windows.h>
 #include "Shader.h"
 #include "ModelLoader.h"
 
@@ -86,8 +86,10 @@ int main() {
     Shader shader(vertexShaderSource, fragmentShaderSource);
     glEnable(GL_DEPTH_TEST);
 
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
         glClearColor(0.4f, 0.2f, 0.6f, 0.5f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -103,7 +105,13 @@ int main() {
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
 
-        drawNode(rootNode, glm::mat4(1.0f), shader.ID);
+        rotationAngle += 1.0f; // prędkość obrotu
+        if (rotationAngle > 360.0f) rotationAngle -= 360.0f;
+
+        int nodeCounter = 0;
+        drawNodeWithRotation(rootNode, glm::mat4(1.0f), shader.ID, nodeCounter);
+        
+        nodeCounter++;
 
         glfwSwapBuffers(window);
     }
