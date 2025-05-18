@@ -4,6 +4,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include <GLFW/glfw3.h>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp> // potrzebne do dekompozycji
 
 std::vector<Mesh> meshes;
 Node rootNode;
@@ -75,22 +77,29 @@ bool loadModel(const std::string& path) {
 }
 
 
-int x = 90;
-std::vector<int> rotatingNodeIndices = { x}; // <- zamień na prawidłowe numery node'ów po wypisaniu ich z debugowania
+
+
+std::vector<int> rotatingNodeIndices = { 78, 84, 90, 96}; 
 float rotationAngle = 0.0f;
 
 void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter) {
     glm::mat4 localTransform = node.transform;
-    
+    glm::mat4 globalTransform = parentTransform * localTransform;
+
     if (std::find(rotatingNodeIndices.begin(), rotatingNodeIndices.end(), nodeCounter) != rotatingNodeIndices.end()) {
-        localTransform = glm::rotate(localTransform, glm::radians(rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+        // Pozycja globalna to kolumna 3 macierzy globalTransform
+        glm::vec3 globalPos = glm::vec3(globalTransform[3]);
+        std::cout << "Węzeł " << nodeCounter << " globalna pozycja: "
+            << globalPos.x << ", " << globalPos.y << ", " << globalPos.z << std::endl;
     }
 
-    glm::mat4 globalTransform = parentTransform * localTransform;
+    // Dalej rysujesz tak jak zwykle (możesz tu wstawić swoją rotację lub jej brak)
+    // Dla prostoty zostawmy bez rotacji teraz:
+    glm::mat4 globalModel = globalTransform;
 
     for (unsigned int i : node.meshIndices) {
         const Mesh& mesh = meshes[i];
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(globalTransform));
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(globalModel));
         glBindVertexArray(mesh.VAO);
         glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
     }
@@ -103,5 +112,6 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
 
     nodeCounter++;
 }
+
 
 

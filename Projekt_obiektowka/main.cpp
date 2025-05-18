@@ -8,6 +8,7 @@
 #include "Shader.h"
 #include "ModelLoader.h"
 
+
 float yaw = 0.0f, pitch = 0.0f;
 float lastX = 400, lastY = 300;
 bool firstMouse = true;

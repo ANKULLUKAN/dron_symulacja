@@ -30,8 +30,6 @@ extern Node rootNode;
 // ³adowanie modelu z pliku
 bool loadModel(const std::string& path);
 
-// rysowanie ca³ego drzewa sceny
-
 
 extern std::vector<int> rotatingNodeIndices;
 extern float rotationAngle;
