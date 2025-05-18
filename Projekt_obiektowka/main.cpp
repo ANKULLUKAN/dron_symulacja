@@ -81,7 +81,7 @@ int main() {
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
 
-    if (!loadModel("E:/projektyCpp/Projekt_obiektowka/x64/Debug/model/result.gltf")) return -1;
+    if (!loadModel("../model/result.gltf")) return -1;
 
     Shader shader(vertexShaderSource, fragmentShaderSource);
     glEnable(GL_DEPTH_TEST);

@@ -71,10 +71,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>E:\projektyCpp\Projekt_obiektowka\libraries\glm1;E:\projektyCpp\Projekt_obiektowka\libraries\glad\include;E:\projektyCpp\Projekt_obiektowka\libraries\Assimp-5.4.3\include;E:\projektyCpp\Projekt_obiektowka\libraries\include;$(IncludePath)</IncludePath>
+    <IncludePath>..\libraries\include;..\libraries\glm1;..\libraries\glfw-3.4.bin.WIN64\include;..\libraries\glad\include;..\libraries\Assimp\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\libraries\Assimp\lib\x64;..\libraries\glfw-3.4.bin.WIN64\lib-vc2022;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>E:\projektyCpp\Projekt_obiektowka\libraries\glm1;E:\projektyCpp\Projekt_obiektowka\libraries\glad\include;E:\projektyCpp\Projekt_obiektowka\libraries\Assimp-5.4.3\include;E:\projektyCpp\Projekt_obiektowka\libraries\include;$(IncludePath)</IncludePath>
+    <IncludePath>..\libraries\include;..\libraries\glm1;..\libraries\glfw-3.4.bin.WIN64\include;..\libraries\glad\include;..\libraries\Assimp\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\libraries\Assimp\lib\x64;..\libraries\glfw-3.4.bin.WIN64\lib-vc2022;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -111,6 +113,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>E:\projektyCpp\Projekt_obiektowka\libraries\glfw-3.4.bin.WIN64\include;E:\projektyCpp\Projekt_obiektowka\libraries\glad\include;E:\projektyCpp\Projekt_obiektowka\libraries\Assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -128,6 +131,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>E:\projektyCpp\Projekt_obiektowka\libraries\glfw-3.4.bin.WIN64\include;E:\projektyCpp\Projekt_obiektowka\libraries\glad\include;E:\projektyCpp\Projekt_obiektowka\libraries\Assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
