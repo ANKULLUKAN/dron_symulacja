@@ -93,8 +93,7 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
             << globalPos.x << ", " << globalPos.y << ", " << globalPos.z << std::endl;
     }
 
-    // Dalej rysujesz tak jak zwykle (możesz tu wstawić swoją rotację lub jej brak)
-    // Dla prostoty zostawmy bez rotacji teraz:
+
     glm::mat4 globalModel = globalTransform;
 
     for (unsigned int i : node.meshIndices) {
