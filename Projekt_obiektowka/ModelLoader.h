@@ -33,7 +33,7 @@ bool loadModel(const std::string& path);
 
 extern std::vector<int> rotatingNodeIndices;
 extern float rotationAngle;
-void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter);
+void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter,float& rotationAngle);
 
 
 

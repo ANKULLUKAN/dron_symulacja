@@ -110,7 +110,7 @@ float floorVertices[] = {
 };
 
 
-
+int nodeCounter = 0;
 int main() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -141,9 +141,10 @@ int main() {
 
     float deltaTime = 0.016f; 
     float rotationAngle = 0.0f;
-    int counter = 0;
+    
 
     while (!glfwWindowShouldClose(window)) {
+        int counter = 0;
         glfwPollEvents();
 
         glm::vec3 gravity(0.0f, -9.81f, 0.0f);
@@ -163,6 +164,7 @@ int main() {
         else {
             thrust.y = hoverThrust;
         }
+        
 
         glm::vec3 inputDir(0.0f);
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) inputDir.z -= 1.0f;
@@ -174,6 +176,11 @@ int main() {
         if (glm::length(inputDir) > 0.0f) {
             inputDir = glm::normalize(inputDir);
         }
+
+        // przysppieszenie pod sziftem :))
+		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+			maxSpeed *= 2.0f; 
+		}
         glm::vec3 targetVelocity = inputDir * maxSpeed;
         droneBox.velocity.x = glm::mix(droneBox.velocity.x, targetVelocity.x, 0.1f);
         droneBox.velocity.z = glm::mix(droneBox.velocity.z, targetVelocity.z, 0.1f);
@@ -197,7 +204,7 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::vec3 cameraOffset(0.0f, 2.0f, 3.0f);
+        glm::vec3 cameraOffset(0.0f, 1.0f, 2.0f);
         glm::vec3 cameraPos = droneBox.position + cameraOffset;
         glm::mat4 view = glm::lookAt(cameraPos, droneBox.position, glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -218,13 +225,17 @@ int main() {
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
         shader.setVec4("objectColor", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // blue
-        rotationAngle += 1.0f;
+
+        // takie podstawowe obracanie wzgledem wysokosci im wieksza tym szybciej :p
+        rotationAngle += 1.0f + * &droneBox.position.y;
+
+
         glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
         shader.setMat4("model", modelMatrix);
-        int nodeCounter = 0;
-        drawNodeWithRotation(rootNode, modelMatrix, shader.ID, nodeCounter);
+        
+        drawNodeWithRotation(rootNode, modelMatrix, shader.ID, nodeCounter, rotationAngle);
 
-        nodeCounter++;
+       
         glfwSwapBuffers(window);
     }
 

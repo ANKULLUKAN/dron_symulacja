@@ -80,37 +80,39 @@ bool loadModel(const std::string& path) {
 
 
 std::vector<int> rotatingNodeIndices = { 78, 84, 90, 96}; 
-float rotationAngle = 0.0f;
 
-void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter) {
+
+void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, float& rotationAngle) {
     glm::mat4 localTransform = node.transform;
-    glm::mat4 globalTransform = parentTransform * localTransform;
 
     if (std::find(rotatingNodeIndices.begin(), rotatingNodeIndices.end(), nodeCounter) != rotatingNodeIndices.end()) {
-        // Pozycja globalna to kolumna 3 macierzy globalTransform
-        glm::vec3 globalPos = glm::vec3(globalTransform[3]);
-        std::cout << "Węzeł " << nodeCounter << " globalna pozycja: "
-            << globalPos.x << ", " << globalPos.y << ", " << globalPos.z << std::endl;
+        glm::vec3 scale, translation, skew;
+        glm::vec4 perspective;
+        glm::quat rotation;
+        glm::decompose(localTransform, scale, rotation, translation, skew, perspective);
+
+        glm::mat4 T = glm::translate(glm::mat4(1.0f), translation);
+        glm::mat4 R = glm::rotate(glm::mat4(1.0f), glm::radians(rotationAngle), glm::vec3(0, 0, 1)); // np. obrót wokół Z
+        glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
+
+        localTransform = T * R * S;
     }
 
-
-    glm::mat4 globalModel = globalTransform;
+    glm::mat4 globalTransform = parentTransform * localTransform; // WAŻNE: teraz po modyfikacji localTransform
 
     for (unsigned int i : node.meshIndices) {
         const Mesh& mesh = meshes[i];
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(globalModel));
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(globalTransform));
         glBindVertexArray(mesh.VAO);
         glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
     }
 
-    int localCounter = nodeCounter;
+    nodeCounter++; // najpierw zwiększamy globalny licznik
     for (const Node& child : node.children) {
-        localCounter++;
-        drawNodeWithRotation(child, globalTransform, shaderProgram, localCounter);
+        drawNodeWithRotation(child, globalTransform, shaderProgram, nodeCounter, rotationAngle);
     }
-
-    nodeCounter++;
 }
+
 
 
 
