@@ -110,7 +110,7 @@ float floorVertices[] = {
 };
 
 
-int nodeCounter = 0;
+
 int main() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -144,7 +144,7 @@ int main() {
     
 
     while (!glfwWindowShouldClose(window)) {
-        int counter = 0;
+        int nodeCounter = 0;
         glfwPollEvents();
 
         glm::vec3 gravity(0.0f, -9.81f, 0.0f);

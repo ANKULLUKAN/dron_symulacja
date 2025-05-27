@@ -4,6 +4,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include <GLFW/glfw3.h>
+#include <windows.h>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp> // potrzebne do dekompozycji
 
@@ -79,12 +81,13 @@ bool loadModel(const std::string& path) {
 
 
 
-std::vector<int> rotatingNodeIndices = { 78, 84, 90, 96}; 
+std::vector<int> rotatingNodeIndices = {125}; 
 
 
 void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, float& rotationAngle) {
     glm::mat4 localTransform = node.transform;
-
+    
+   
     if (std::find(rotatingNodeIndices.begin(), rotatingNodeIndices.end(), nodeCounter) != rotatingNodeIndices.end()) {
         glm::vec3 scale, translation, skew;
         glm::vec4 perspective;
@@ -111,6 +114,7 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
     for (const Node& child : node.children) {
         drawNodeWithRotation(child, globalTransform, shaderProgram, nodeCounter, rotationAngle);
     }
+    
 }
 
 

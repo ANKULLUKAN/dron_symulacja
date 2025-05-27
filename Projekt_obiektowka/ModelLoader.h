@@ -18,6 +18,7 @@ struct Mesh {
 };
 
 struct Node {
+    
     glm::mat4 transform;
     std::vector<unsigned int> meshIndices;
     std::vector<Node> children;
