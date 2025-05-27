@@ -78,8 +78,9 @@ void main() {
 const char* fragmentShaderSource = R"(
 #version 330 core
 out vec4 FragColor;
+uniform vec4 objectColor;
 void main() {
-    FragColor = vec4(1.0, 0.0, 0.0, 1.0); 
+    FragColor = objectColor;
 }
 )";
 
@@ -146,26 +147,42 @@ int main() {
         glfwPollEvents();
 
         glm::vec3 gravity(0.0f, -9.81f, 0.0f);
+
+		const float hoverThrust = 9.81f; 
+        const float ascendDelta = 0.2f; 
+        const float descendDelta = 0.2f;
+
         glm::vec3 thrust(0.0f);
-        
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        {
-            thrust.y = 11.0f + counter;
-            counter += 0.1f;
+
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            thrust.y = hoverThrust + ascendDelta;
         }
-            
+        else if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS) {
+            thrust.y = hoverThrust - descendDelta;
+        }
+        else {
+            thrust.y = hoverThrust;
+        }
 
         glm::vec3 inputDir(0.0f);
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) inputDir.z -= 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) inputDir.z += 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) inputDir.x -= 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) inputDir.x += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) inputDir.z -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) inputDir.z += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) inputDir.x -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) inputDir.x += 1.0f;
+
+        float maxSpeed = 0.5f;
         if (glm::length(inputDir) > 0.0f) {
             inputDir = glm::normalize(inputDir);
-            droneBox.velocity += inputDir * 5.0f * deltaTime;
         }
+        glm::vec3 targetVelocity = inputDir * maxSpeed;
+        droneBox.velocity.x = glm::mix(droneBox.velocity.x, targetVelocity.x, 0.1f);
+        droneBox.velocity.z = glm::mix(droneBox.velocity.z, targetVelocity.z, 0.1f);
 
         droneBox.velocity += (gravity + thrust) * deltaTime;
+
+        float damping = 0.99f;
+        droneBox.velocity *= damping;
+
         droneBox.position += droneBox.velocity * deltaTime;
 
         if (droneBox.position.y < 0.0f) {
@@ -173,44 +190,40 @@ int main() {
             droneBox.velocity.y = 0.0f;
         }
 
-       
+        float maxVerticalSpeed = 0.5f;
+        if (droneBox.velocity.y > maxVerticalSpeed) droneBox.velocity.y = maxVerticalSpeed;
+		if (droneBox.velocity.y < -maxVerticalSpeed) droneBox.velocity.y = -maxVerticalSpeed;
+
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glm::vec3 cameraOffset(0.0f, 2.0f, 3.0f);
+        glm::vec3 cameraPos = droneBox.position + cameraOffset;
+        glm::mat4 view = glm::lookAt(cameraPos, droneBox.position, glm::vec3(0.0f, 1.0f, 0.0f));
 
-
-        float camX = radius * cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-        float camY = radius * sin(glm::radians(pitch));
-        float camZ = radius * sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-        glm::vec3 cameraPos = glm::vec3(camX, camY, camZ);
-
-        glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 100.0f);
 
-       
-
+        // Draw floor
         shader.use();
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
-
-   
-        glm::mat4 floorModel = glm::mat4(1.0f); 
+        shader.setVec4("objectColor", glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)); // gray
+        glm::mat4 floorModel = glm::mat4(1.0f);
         shader.setMat4("model", floorModel);
         glBindVertexArray(floorVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-
+        // Draw drone
         shader.use();
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
+        shader.setVec4("objectColor", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // blue
         rotationAngle += 1.0f;
-       
         glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
         shader.setMat4("model", modelMatrix);
         int nodeCounter = 0;
         drawNodeWithRotation(rootNode, modelMatrix, shader.ID, nodeCounter);
 
-       
         nodeCounter++;
         glfwSwapBuffers(window);
     }
