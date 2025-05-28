@@ -88,29 +88,31 @@ bool loadModel(const std::string& path) {
     return true;
 }
 
-// Indeksy węzłów, które mają być obracane (np. śmigła)
-std::vector<int> rotatingNodeIndices = { 125 };
+
 
 // Rysowanie węzła (i jego dzieci) z opcjonalną rotacją wybranych węzłów
-void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, float& rotationAngle) {
+// Dodano parametr 'char keyPressed' - przekazujemy aktualnie wciśnięty klawisz sterowania
+void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, char& keyPressed) 
+{
     glm::mat4 localTransform = node.transform;
+    float rotationAngleY = 0.0f; // obrót wokół osi Y (lewo/prawo)
+    float rotationAngleX = 0.0f; // obrót wokół osi X (przód/tył)
 
-    // Jeśli ten węzeł jest na liście obracanych, zastosuj dodatkową rotację
-    if (std::find(rotatingNodeIndices.begin(), rotatingNodeIndices.end(), nodeCounter) != rotatingNodeIndices.end()) {
-        glm::vec3 scale, translation, skew;
-        glm::vec4 perspective;
-        glm::quat rotation;
-        glm::decompose(localTransform, scale, rotation, translation, skew, perspective);
-
-        glm::mat4 T = glm::translate(glm::mat4(1.0f), translation);
-        glm::mat4 R = glm::rotate(glm::mat4(1.0f), glm::radians(rotationAngle), glm::vec3(0, 0, 1)); // np. obrót wokół Z
-        glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
-
-        localTransform = T * R * S;
+    // Obracaj model w zależności od wciśniętego klawisza
+    if (keyPressed == 'D') {
+        rotationAngleY += glm::radians(1.0f); // obrót w prawo (Y)
+    } else if (keyPressed == 'A') {
+        rotationAngleY -= glm::radians(1.0f); // obrót w lewo (Y)
+    } else if (keyPressed == 'W') {
+        rotationAngleX -= glm::radians(1.0f); // obrót do przodu (X)
+    } else if (keyPressed == 'S') {
+        rotationAngleX += glm::radians(1.0f); // obrót do tyłu (X)
     }
 
-    // Oblicz globalną transformację dla tego węzła
-    glm::mat4 globalTransform = parentTransform * localTransform;
+    // Najpierw obrót wokół X, potem wokół Y 
+    glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), rotationAngleX, glm::vec3(1.0f, 0.0f, 0.0f));
+    glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), rotationAngleY, glm::vec3(0.0f, 0.0f, -1.0f));
+    glm::mat4 globalTransform = parentTransform * rotationY * rotationX * localTransform;
 
     // Rysuj wszystkie siatki przypisane do tego węzła
     for (unsigned int i : node.meshIndices) {
@@ -123,6 +125,6 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
     nodeCounter++; // Zwiększ licznik węzłów (ważne dla identyfikacji obracanych)
     // Rekurencyjnie rysuj dzieci
     for (const Node& child : node.children) {
-        drawNodeWithRotation(child, globalTransform, shaderProgram, nodeCounter, rotationAngle);
+        drawNodeWithRotation(child, globalTransform, shaderProgram, nodeCounter, keyPressed);
     }
 }

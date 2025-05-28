@@ -87,13 +87,13 @@ int main() {
         const float damping = 0.98f;        // Tłumienie
         const float maxSpeed = 0.05f;       // Maksymalna prędkość w każdej osi
         const float stopThreshold = 0.005f; // Próg uznania prędkości za "zatrzymaną"
-
+        char pressed;
         // Odczyt wejścia
         glm::vec3 input(0.0f);
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) input.z -= 0.1f;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) input.z += 0.1f;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) input.x -= 0.1f;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.x += 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) input.z -= 0.1f, pressed = 'W';
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) input.z += 0.1f, pressed = 'S';
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) input.x -= 0.1f, pressed = 'A';
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.x += 0.1f, pressed = 'D';
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.y += 0.1f;
         if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) input.y -= 0.1f;
 
@@ -165,7 +165,7 @@ int main() {
         shader.setMat4("model", modelMatrix);
 
         // Rysowanie modelu drona z rotacją (jeśli jest obsługiwana)
-        drawNodeWithRotation(rootNode, modelMatrix, shader.ID, nodeCounter, rotationAngle);
+        drawNodeWithRotation(rootNode, modelMatrix, shader.ID, nodeCounter, pressed);
 
         glfwSwapBuffers(window);
     }
