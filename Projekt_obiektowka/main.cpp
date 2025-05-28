@@ -83,31 +83,35 @@ int main() {
         glfwPollEvents();
 
         // --- Prosta fizyka drona: identyczna w każdej osi ---
-        const float accel = 0.002f;         // Przyspieszenie w każdej osi
-        const float damping = 0.998f;       // Tłumienie (im bliżej 1, tym wolniej zwalnia)
-        const float maxSpeed = 0.002f;       // Maksymalna prędkość w każdej osi
-        const float stopThreshold = 0.0004f; // Próg uznania prędkości za "zatrzymaną"
+        const float accel = 0.05f;         // Przyspieszenie w każdej osi
+        const float damping = 0.98f;        // Tłumienie
+        const float maxSpeed = 0.05f;       // Maksymalna prędkość w każdej osi
+        const float stopThreshold = 0.005f; // Próg uznania prędkości za "zatrzymaną"
 
         // Odczyt wejścia
         glm::vec3 input(0.0f);
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) input.z -= 0.001f;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) input.z += 0.001f;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) input.x -= 0.001f;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.x += 0.001f;
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.y += 0.001f;
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) input.y -= 0.001f;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) input.z -= 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) input.z += 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) input.x -= 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.x += 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.y += 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) input.y -= 0.1f;
 
         // Ujednolicone sterowanie i blokada zmiany kierunku
         for (int i = 0; i < 3; ++i) {
             if (std::abs(input[i]) > 0.0f) {
-                // Jeśli próbujesz zmienić kierunek, a prędkość nie jest bliska zeru, najpierw wyhamuj
-                if ((input[i] > 0.0f && droneBox.velocity[i] < -stopThreshold) ||
-                    (input[i] < 0.0f && droneBox.velocity[i] > stopThreshold)) {
-                    // Nie przyspieszaj w przeciwną stronę, dopóki nie wyhamujesz
-                }
-                else {
+                // Jeśli prędkość jest bliska zera, zerujemy ją i pozwalamy ruszyć w nowym kierunku
+                if (std::abs(droneBox.velocity[i]) < stopThreshold) {
+                    droneBox.velocity[i] = 0.0f;
                     droneBox.velocity[i] += input[i] * accel;
                 }
+                // Jeśli kierunek wejścia zgadza się z kierunkiem prędkości, przyspieszamy normalnie
+                else if ((input[i] > 0.0f && droneBox.velocity[i] > 0.0f) ||
+                    (input[i] < 0.0f && droneBox.velocity[i] < 0.0f)) {
+                    droneBox.velocity[i] += input[i] * accel;
+                }
+                // Jeśli kierunek wejścia przeciwny do prędkości, nie przyspieszaj (pozwól działać tłumieniu)
+                // else: nic nie robimy, aż prędkość wyhamuje do zera
             }
         }
 
