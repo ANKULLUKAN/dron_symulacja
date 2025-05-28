@@ -6,35 +6,37 @@
 #include <glad/glad.h>
 #include <assimp/scene.h>
 
+// Struktura pojedynczego wierzcho³ka (pozycja i normalna)
 struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
+    glm::vec3 position; // Pozycja wierzcho³ka
+    glm::vec3 normal;   // Wektor normalny wierzcho³ka
 };
 
+// Struktura siatki (mesh) - przechowuje wierzcho³ki, indeksy i identyfikatory OpenGL
 struct Mesh {
-    std::vector<Vertex> vertices;
-    std::vector<unsigned int> indices;
-    GLuint VAO, VBO, EBO;
+    std::vector<Vertex> vertices;      // Wierzcho³ki siatki
+    std::vector<unsigned int> indices; // Indeksy do rysowania elementów
+    GLuint VAO, VBO, EBO;              // Identyfikatory OpenGL: Vertex Array, Vertex Buffer, Element Buffer
 };
 
+// Struktura wêz³a drzewa sceny (hierarchia modelu)
 struct Node {
-    
-    glm::mat4 transform;
-    std::vector<unsigned int> meshIndices;
-    std::vector<Node> children;
+    glm::mat4 transform;                   // Macierz transformacji wêz³a
+    std::vector<unsigned int> meshIndices; // Indeksy siatek przypisanych do tego wêz³a
+    std::vector<Node> children;            // Dzieci (podwêz³y) w hierarchii
 };
 
-// globalne kontenery
-extern std::vector<Mesh> meshes;
-extern Node rootNode;
+// Globalne kontenery na siatki i korzeñ drzewa sceny
+extern std::vector<Mesh> meshes; // Wszystkie siatki modelu
+extern Node rootNode;            // Korzeñ drzewa sceny
 
-// ³adowanie modelu z pliku
+// £aduje model z pliku (np. .gltf, .obj) i buduje strukturê wêz³ów oraz siatek
 bool loadModel(const std::string& path);
 
-
+// Indeksy wêz³ów, które maj¹ byæ obracane oraz aktualny k¹t obrotu (do animacji)
 extern std::vector<int> rotatingNodeIndices;
 extern float rotationAngle;
-void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter,float& rotationAngle);
 
-
+// Rysuje wêze³ (i jego dzieci) z uwzglêdnieniem rotacji wybranych wêz³ów
+void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, float& rotationAngle);
 

@@ -149,10 +149,6 @@
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\shaders\fragment.glsl" />
-    <None Include="..\shaders\vertex.glsl" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="Shader.h" />
   </ItemGroup>
