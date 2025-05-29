@@ -38,5 +38,5 @@ extern std::vector<int> rotatingNodeIndices;
 extern float rotationAngle;
 
 // Rysuje wêze³ (i jego dzieci) z uwzglêdnieniem rotacji wybranych wêz³ów
-void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, char& keyPressed);
+void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, float& tiltAngleX, float& tiltAngleY);
 

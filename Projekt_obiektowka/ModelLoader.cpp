@@ -90,31 +90,19 @@ bool loadModel(const std::string& path) {
 
 
 
-// Rysowanie węzła (i jego dzieci) z opcjonalną rotacją wybranych węzłów
-// Dodano parametr 'char keyPressed' - przekazujemy aktualnie wciśnięty klawisz sterowania
-void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, char& keyPressed) 
+// na razie odpuszcam obrot skrzydel
+void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, float& tiltAngleX, float& tiltAngleY)
 {
+    // Ograniczenie kąta przechyłu do 10 stopni (w radianach)
+    const float maxTilt = glm::radians(10.0f);
+    tiltAngleX = glm::clamp(tiltAngleX, -maxTilt, maxTilt);
+    tiltAngleY = glm::clamp(tiltAngleY, -maxTilt, maxTilt);
+
     glm::mat4 localTransform = node.transform;
-    float rotationAngleY = 0.0f; // obrót wokół osi Y (lewo/prawo)
-    float rotationAngleX = 0.0f; // obrót wokół osi X (przód/tył)
-
-    // Obracaj model w zależności od wciśniętego klawisza
-    if (keyPressed == 'D') {
-        rotationAngleY += glm::radians(1.0f); // obrót w prawo (Y)
-    } else if (keyPressed == 'A') {
-        rotationAngleY -= glm::radians(1.0f); // obrót w lewo (Y)
-    } else if (keyPressed == 'W') {
-        rotationAngleX -= glm::radians(1.0f); // obrót do przodu (X)
-    } else if (keyPressed == 'S') {
-        rotationAngleX += glm::radians(1.0f); // obrót do tyłu (X)
-    }
-
-    // Najpierw obrót wokół X, potem wokół Y 
-    glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), rotationAngleX, glm::vec3(1.0f, 0.0f, 0.0f));
-    glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), rotationAngleY, glm::vec3(0.0f, 0.0f, -1.0f));
+    glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), tiltAngleX, glm::vec3(1.0f, 0.0f, 0.0f));
+    glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), tiltAngleY, glm::vec3(0.0f, 0.0f, -1.0f));
     glm::mat4 globalTransform = parentTransform * rotationY * rotationX * localTransform;
 
-    // Rysuj wszystkie siatki przypisane do tego węzła
     for (unsigned int i : node.meshIndices) {
         const Mesh& mesh = meshes[i];
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(globalTransform));
@@ -122,9 +110,9 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
         glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
     }
 
-    nodeCounter++; // Zwiększ licznik węzłów (ważne dla identyfikacji obracanych)
-    // Rekurencyjnie rysuj dzieci
+    nodeCounter++;
     for (const Node& child : node.children) {
-        drawNodeWithRotation(child, globalTransform, shaderProgram, nodeCounter, keyPressed);
+        drawNodeWithRotation(child, globalTransform, shaderProgram, nodeCounter, tiltAngleX, tiltAngleY);
     }
 }
+

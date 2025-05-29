@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
+#include <cmath>
 #include "Shader.h"
 #include "ModelLoader.h"
 
@@ -18,6 +18,13 @@ struct PhysicsBox {
         : position(pos), size(sz), mass(m), velocity(0.0f) {
     }
 };
+
+// --- Zmienne globalne do obsługi celu ---
+glm::vec3 droneTarget(0.0f);
+bool hasTarget = false;
+PhysicsBox* g_droneBox = nullptr;
+glm::mat4 g_view, g_projection;
+GLFWwindow* g_window = nullptr;
 
 // Wierzchołki sześcianu
 float cubeVertices[] = {
@@ -46,6 +53,59 @@ float floorVertices[] = {
     -5.0f, 0.0f, -5.0f,
 };
 
+// --- Funkcja rzutująca kliknięcie na podłogę (y=0) ---
+glm::vec3 screenToWorld(float mouseX, float mouseY, int width, int height, const glm::mat4& view, const glm::mat4& projection, const glm::vec3& camPos) {
+    float x = (2.0f * mouseX) / width - 1.0f;
+    float y = 1.0f - (2.0f * mouseY) / height;
+    glm::vec4 ray_clip = glm::vec4(x, y, -1.0f, 1.0f);
+
+    glm::vec4 ray_eye = glm::inverse(projection) * ray_clip;
+    ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
+
+    glm::vec3 ray_world = glm::vec3(glm::inverse(view) * ray_eye);
+    ray_world = glm::normalize(ray_world);
+
+    // Przecięcie promienia z płaszczyzną y=0
+    float t = -camPos.y / ray_world.y;
+    glm::vec3 intersection = camPos + t * ray_world;
+    return intersection;
+}
+
+// --- Callback myszy ---
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+       
+        glm::vec3 cameraOffset(0.0f, 1.0f, 2.0f);
+        glm::vec3 camPos = g_droneBox->position + cameraOffset;
+
+        // Użyj aktualnych macierzy
+        glm::vec3 target = screenToWorld((float)xpos, (float)ypos, width, height, g_view, g_projection, camPos);
+        target.y = 0.0f; // Lądujemy na podłodze
+        droneTarget = target;
+        hasTarget = true;
+    }
+}
+
+std::vector<float> generateShadowVertices(float radiusX, float radiusZ, int segments = 32) {
+    std::vector<float> vertices;
+    vertices.push_back(0.0f); 
+    vertices.push_back(0.0f); 
+    vertices.push_back(0.0f); 
+    for (int i = 0; i <= segments; ++i) {
+        float angle = 2.0f * 3.1415926f * i / segments;
+        float x = radiusX * cos(angle);
+        float z = radiusZ * sin(angle);
+        vertices.push_back(x);
+        vertices.push_back(0.0f);
+        vertices.push_back(z);
+    }
+    return vertices;
+}
+
 int main() {
     // Inicjalizacja GLFW i OpenGL
     glfwInit();
@@ -56,16 +116,14 @@ int main() {
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     glEnable(GL_DEPTH_TEST);
 
-    // Wczytanie modelu drona (GLTF)
     if (!loadModel("../model/result.gltf")) return -1;
 
-    // Tworzenie shadera
     Shader shader{};
 
-    // Inicjalizacja obiektu fizycznego drona
     PhysicsBox droneBox(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(1.0f, 0.3f, 1.0f), 1.0f);
-
-    // Tworzenie VAO i VBO dla podłogi
+    g_droneBox = &droneBox;
+    g_window = window;
+    // podloga
     unsigned int floorVAO, floorVBO;
     glGenVertexArrays(1, &floorVAO);
     glGenBuffers(1, &floorVBO);
@@ -74,7 +132,21 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, floorVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(floorVertices), floorVertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
     glEnableVertexAttribArray(0);
+    // cien
+    std::vector<float> shadowVertices = generateShadowVertices(0.5f, 0.25f, 32); // elipsa pod dronem
+    unsigned int shadowVAO, shadowVBO;
+    glGenVertexArrays(1, &shadowVAO);
+    glGenBuffers(1, &shadowVBO);
+
+    glBindVertexArray(shadowVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, shadowVBO);
+    glBufferData(GL_ARRAY_BUFFER, shadowVertices.size() * sizeof(float), shadowVertices.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     float rotationAngle = 10.0f;
 
@@ -83,90 +155,114 @@ int main() {
         glfwPollEvents();
 
         // --- Prosta fizyka drona: identyczna w każdej osi ---
-        const float accel = 0.05f;         // Przyspieszenie w każdej osi
-        const float damping = 0.98f;        // Tłumienie
-        const float maxSpeed = 0.05f;       // Maksymalna prędkość w każdej osi
-        const float stopThreshold = 0.005f; // Próg uznania prędkości za "zatrzymaną"
-        char pressed;
-        // Odczyt wejścia
-        glm::vec3 input(0.0f);
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) input.z -= 0.1f, pressed = 'W';
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) input.z += 0.1f, pressed = 'S';
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) input.x -= 0.1f, pressed = 'A';
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.x += 0.1f, pressed = 'D';
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.y += 0.1f;
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) input.y -= 0.1f;
-
-        // Ujednolicone sterowanie i blokada zmiany kierunku
-        for (int i = 0; i < 3; ++i) {
-            if (std::abs(input[i]) > 0.0f) {
-                // Jeśli prędkość jest bliska zera, zerujemy ją i pozwalamy ruszyć w nowym kierunku
-                if (std::abs(droneBox.velocity[i]) < stopThreshold) {
-                    droneBox.velocity[i] = 0.0f;
-                    droneBox.velocity[i] += input[i] * accel;
-                }
-                // Jeśli kierunek wejścia zgadza się z kierunkiem prędkości, przyspieszamy normalnie
-                else if ((input[i] > 0.0f && droneBox.velocity[i] > 0.0f) ||
-                    (input[i] < 0.0f && droneBox.velocity[i] < 0.0f)) {
-                    droneBox.velocity[i] += input[i] * accel;
-                }
-                // Jeśli kierunek wejścia przeciwny do prędkości, nie przyspieszaj (pozwól działać tłumieniu)
-                // else: nic nie robimy, aż prędkość wyhamuje do zera
-            }
-        }
-
-        // Tłumienie
-        droneBox.velocity *= damping;
-
-        // Ograniczenie maksymalnej prędkości w każdej osi
-        for (int i = 0; i < 3; ++i) {
-            if (droneBox.velocity[i] > maxSpeed) droneBox.velocity[i] = maxSpeed;
-            if (droneBox.velocity[i] < -maxSpeed) droneBox.velocity[i] = -maxSpeed;
-        }
-
-        // Aktualizacja pozycji
-        droneBox.position += droneBox.velocity;
-
-        // Ograniczenie ruchu w dół (podłoga)
-        if (droneBox.position.y < 0.0f) {
-            droneBox.position.y = 0.0f;
-            droneBox.velocity.y = 0.0f;
-        }
-
-
-        // --- Renderowanie sceny ---
-        glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        const float accel = 0.05f;
+        const float damping = 0.98f;
+        const float maxSpeed = 0.05f;
+        const float stopThreshold = 0.005f;
+        const float maxTiltAngle = 10.0f;
 
         // Ustawienie kamery śledzącej drona z góry pod kątem
         glm::vec3 cameraOffset(0.0f, 1.0f, 2.0f);
         glm::vec3 cameraPos = droneBox.position + cameraOffset;
         glm::mat4 view = glm::lookAt(cameraPos, droneBox.position, glm::vec3(0.0f, 1.0f, 0.0f));
-
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 100.0f);
 
-        // Rysowanie podłogi (szary kolor)
+        // Zapamiętaj macierze do rzutowania kliknięcia
+        g_view = view;
+        g_projection = projection;
+
+        // Odczyt wejścia
+        glm::vec3 input(0.0f);
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) input.z -= 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) input.z += 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) input.x -= 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.x += 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.y += 0.1f;
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) input.y -= 0.1f;
+
+        // sterpwamoe do miesjca klilniecia
+        if (hasTarget) {
+            glm::vec3 toTarget = droneTarget - droneBox.position;
+            toTarget.y = 0.0f; // Lataj tylko po podłodze
+            float dist = glm::length(toTarget);
+            if (dist > 0.1f) {
+                glm::vec3 dir = glm::normalize(toTarget);
+                input.x = dir.x * 0.1f;
+                input.z = dir.z * 0.1f;
+            }
+            else {
+                hasTarget = false;
+            }
+        }
+
+        // Ujednolicone sterowanie i blokada zmiany kierunku
+        for (int i = 0; i < 3; ++i) {
+            if (std::abs(input[i]) > 0.0f) {
+                if (std::abs(droneBox.velocity[i]) < stopThreshold) {
+                    droneBox.velocity[i] = 0.0f;
+                    droneBox.velocity[i] += input[i] * accel;
+                }
+                else if ((input[i] > 0.0f && droneBox.velocity[i] > 0.0f) ||
+                    (input[i] < 0.0f && droneBox.velocity[i] < 0.0f)) {
+                    droneBox.velocity[i] += input[i] * accel;
+                }
+            }
+        }
+
+        droneBox.velocity *= damping;
+
+        for (int i = 0; i < 3; ++i) {
+            if (droneBox.velocity[i] > maxSpeed) droneBox.velocity[i] = maxSpeed;
+            if (droneBox.velocity[i] < -maxSpeed) droneBox.velocity[i] = -maxSpeed;
+        }
+
+        droneBox.position += droneBox.velocity;
+
+        if (droneBox.position.y < 0.0f) {
+            droneBox.position.y = 0.0f;
+            droneBox.velocity.y = 0.0f;
+        }
+
+        // --- Renderowanie sceny ---
+        glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // tworzenie podlogi 
         shader.use();
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
         shader.setVec4("objectColor", glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
         glm::mat4 floorModel = glm::mat4(1.0f);
         shader.setMat4("model", floorModel);
+
         glBindVertexArray(floorVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // Rysowanie drona (czerwony kolor)
+        // tworzenie a'la cienia 
+        shader.use();
+        shader.setMat4("view", view);
+        shader.setMat4("projection", projection);
+        shader.setVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.4f)); 
+        glm::mat4 shadowModel = glm::translate(glm::mat4(1.0f), glm::vec3(droneBox.position.x, 0.01f, droneBox.position.z));
+        shader.setMat4("model", shadowModel);
+
+        glBindVertexArray(shadowVAO);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, static_cast<GLsizei>(shadowVertices.size() / 3));
+
+        // tworzenie modelu
         shader.use();
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
         shader.setVec4("objectColor", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-
         glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
         shader.setMat4("model", modelMatrix);
 
-        // Rysowanie modelu drona z rotacją (jeśli jest obsługiwana)
-        drawNodeWithRotation(rootNode, modelMatrix, shader.ID, nodeCounter, pressed);
+		//katy w zaleznosci od predkosci trzeba cos z ta predkoscia ogarnac bo on nie przyspiesza ale od razu pedzi z pelna predkoscia
+        float tiltAngleX = glm::clamp(droneBox.velocity.z / maxSpeed, -1.0f, 1.0f) * maxTiltAngle;
+        float tiltAngleY = glm::clamp(droneBox.velocity.x / maxSpeed, -1.0f, 1.0f) * maxTiltAngle;
 
+        // funckja rysujaca
+        drawNodeWithRotation(rootNode, modelMatrix, shader.ID, nodeCounter, tiltAngleX, tiltAngleY);
         glfwSwapBuffers(window);
     }
 
