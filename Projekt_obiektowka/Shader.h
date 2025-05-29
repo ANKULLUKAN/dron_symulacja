@@ -26,6 +26,7 @@ public:
     // Ustawia uniform vec4 o podanej nazwie (np. kolor obiektu)
     void setVec4(const std::string& name, const glm::vec4& value) const;
 
+
 private:
     // Kompiluje pojedynczy shader (vertex lub fragment) z podanego Ÿród³a
     GLuint compileShader(GLenum type, const char* source);

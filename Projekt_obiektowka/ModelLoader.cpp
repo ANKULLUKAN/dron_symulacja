@@ -99,6 +99,15 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
     tiltAngleY = glm::clamp(tiltAngleY, -maxTilt, maxTilt);
 
     glm::mat4 localTransform = node.transform;
+
+    // trezeba znalezc node dla ktorego sie obraca
+    static float wingsAngle = 0.0f;
+    if (nodeCounter == 125) {
+        wingsAngle += 0.05f; 
+        if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
+        localTransform = glm::rotate(localTransform, wingsAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+
     glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), tiltAngleX, glm::vec3(1.0f, 0.0f, 0.0f));
     glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), tiltAngleY, glm::vec3(0.0f, 0.0f, -1.0f));
     glm::mat4 globalTransform = parentTransform * rotationY * rotationX * localTransform;

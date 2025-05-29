@@ -6,6 +6,7 @@
 #include <cmath>
 #include "Shader.h"
 #include "ModelLoader.h"
+#include <windows.h>
 
 // Struktura opisująca pudełko fizyczne (pozycja, prędkość, rozmiar, masa)
 struct PhysicsBox {
@@ -106,6 +107,8 @@ std::vector<float> generateShadowVertices(float radiusX, float radiusZ, int segm
     return vertices;
 }
 
+
+bool droneBroken = false;
 int main() {
     // Inicjalizacja GLFW i OpenGL
     glfwInit();
@@ -154,6 +157,9 @@ int main() {
         int nodeCounter = 0;
         glfwPollEvents();
 
+       
+
+
         // --- Prosta fizyka drona: identyczna w każdej osi ---
         const float accel = 0.05f;
         const float damping = 0.98f;
@@ -179,6 +185,13 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.x += 0.1f;
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.y += 0.1f;
         if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) input.y -= 0.1f;
+
+        if (droneBroken) {
+            droneBox.velocity = glm::vec3(0.0f);
+            hasTarget = false;
+            MessageBoxA(NULL, "Kolizja! Dron zepsuty. Aby zresetowac wcisnij R", "Błąd", MB_OK);
+            if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) droneBroken = false, input.y = 10.0f;
+        }
 
         // sterpwamoe do miesjca klilniecia
         if (hasTarget) {
@@ -221,6 +234,9 @@ int main() {
         if (droneBox.position.y < 0.0f) {
             droneBox.position.y = 0.0f;
             droneBox.velocity.y = 0.0f;
+            if (!droneBroken) {
+                droneBroken = true;             
+            }
         }
 
         // --- Renderowanie sceny ---
