@@ -23,6 +23,7 @@ Node processNode(aiNode* ainode) {
     Node node;
     node.transform = aiMatrix4x4ToGlm(ainode->mTransformation);
     // Dodaj indeksy siatek przypisanych do tego węzła
+    std::cout << "Node name: " << ainode->mName.C_Str() << std::endl;
     for (unsigned int i = 0; i < ainode->mNumMeshes; i++)
         node.meshIndices.push_back(ainode->mMeshes[i]);
     // Przetwarzaj dzieci rekurencyjnie
@@ -100,9 +101,9 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
 
     glm::mat4 localTransform = node.transform;
 
-    // trezeba znalezc node dla ktorego sie obraca
+    
     static float wingsAngle = 0.0f;
-    if (nodeCounter == 125) {
+    if (nodeCounter == 127 || nodeCounter == 130 || nodeCounter == 133 || nodeCounter == 136) {
         wingsAngle += 0.05f; 
         if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
         localTransform = glm::rotate(localTransform, wingsAngle, glm::vec3(0.0f, 1.0f, 0.0f));
