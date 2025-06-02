@@ -163,7 +163,7 @@ int main() {
 
         // --- Prosta fizyka drona: identyczna w każdej osi ---
         constexpr float accel = 0.05f;
-        constexpr float damping = 0.98f;
+        constexpr float damping = 0.99f;
         constexpr float maxSpeed = 0.05f;
         constexpr float stopThreshold = 0.005f;
         constexpr float maxTiltAngle = 10.0f;
@@ -190,7 +190,7 @@ int main() {
         if (droneBroken) {
             droneBox.velocity = glm::vec3(0.0f);
             hasTarget = false;
-            MessageBoxA(NULL, "Collision! Dron. Aby zresetowac wcisnij R", "Blad", MB_OK);
+            MessageBoxA(NULL, "Collision! To restart press R.", "Error!", MB_OK);
             if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) droneBroken = false, input.y = 10.0f;
         }
 
