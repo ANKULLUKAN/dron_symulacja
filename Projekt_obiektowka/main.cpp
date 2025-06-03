@@ -111,6 +111,7 @@ std::vector<float> generateShadowVertices(float radiusX, float radiusZ, int segm
 
 bool droneBroken = false;
 int main() {
+
     // Inicjalizacja GLFW i OpenGL
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -120,30 +121,32 @@ int main() {
     gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress));
     glEnable(GL_DEPTH_TEST);
 
-    if (!loadModel("../model/result.gltf")) return -1;
+	// Załaduj model drona
+    if (!LoadModel("../model/result.gltf")) return -1;
 
-    Shader shader{};
+	// Inicjalizacja shadera
+    Shader colorShader("shader/color.vert", "shader/color.frag");
+    Shader texturedShader("shader/texture.vert", "shader/texture.frag");
 
     PhysicsBox droneBox(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(1.0f, 0.3f, 1.0f), 1.0f);
     g_droneBox = &droneBox;
     g_window = window;
+
     // Podłoga
     unsigned int floorVAO, floorVBO;
     glGenVertexArrays(1, &floorVAO);
     glGenBuffers(1, &floorVBO);
-
     glBindVertexArray(floorVAO);
     glBindBuffer(GL_ARRAY_BUFFER, floorVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(floorVertices), floorVertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
-
     glEnableVertexAttribArray(0);
+
     // Cień
     std::vector<float> shadowVertices = generateShadowVertices(0.5f, 0.25f, 32); // elipsa pod dronem
     unsigned int shadowVAO, shadowVBO;
     glGenVertexArrays(1, &shadowVAO);
     glGenBuffers(1, &shadowVBO);
-
     glBindVertexArray(shadowVAO);
     glBindBuffer(GL_ARRAY_BUFFER, shadowVBO);
     glBufferData(GL_ARRAY_BUFFER, shadowVertices.size() * sizeof(float), shadowVertices.data(), GL_STATIC_DRAW);
@@ -152,14 +155,11 @@ int main() {
 
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-    float rotationAngle = 10.0f;
-
     while (!glfwWindowShouldClose(window)) {
+
+		// --- Obsługa wejścia i aktualizacja stanu drona ---
         int nodeCounter = 0;
         glfwPollEvents();
-
-       
-
 
         // --- Prosta fizyka drona: identyczna w każdej osi ---
         constexpr float accel = 0.05f;
@@ -187,12 +187,27 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.y += 0.1f;
         if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) input.y -= 0.1f;
 
+        
+        // W głównej pętli:
         if (droneBroken) {
-            droneBox.velocity = glm::vec3(0.0f);
-            hasTarget = false;
-            MessageBoxA(NULL, "Collision! To restart press R.", "Error!", MB_OK);
-            if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) droneBroken = false, input.y = 10.0f;
+            static bool messageShown = false;
+            if (!messageShown) {
+                MessageBoxA(nullptr, "Press R to restart.", "Collision!", MB_OK);
+                messageShown = true;
+            }
+            // Czekaj na wciśnięcie R
+            if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+                droneBox.position = glm::vec3(0.0f, 5.0f, 0.0f);
+                droneBox.velocity = glm::vec3(0.0f);
+                droneBroken = false;
+                hasTarget = false;
+                messageShown = false;
+            }
+            // Pomijaj resztę logiki, dopóki nie zrestartujesz
+            glfwSwapBuffers(window);
+            continue;
         }
+
 
         // Sterowanie do miejsca kliknięcia
         if (hasTarget) {
@@ -246,41 +261,40 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Tworzenie podłogi 
-        shader.use();
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
-        shader.setVec4("objectColor", glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
+        colorShader.use();
+        colorShader.setMat4("view", view);
+        colorShader.setMat4("projection", projection);
+        colorShader.setVec4("objectColor", glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
         glm::mat4 floorModel = glm::mat4(1.0f);
-        shader.setMat4("model", floorModel);
+        colorShader.setMat4("model", floorModel);
 
         glBindVertexArray(floorVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // Tworzenie +/- "cienia"
-        shader.use();
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
-        shader.setVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.4f)); 
+        colorShader.use();
+        colorShader.setMat4("view", view);
+        colorShader.setMat4("projection", projection);
+        colorShader.setVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.4f));
         glm::mat4 shadowModel = glm::translate(glm::mat4(1.0f), glm::vec3(droneBox.position.x, 0.01f, droneBox.position.z));
-        shader.setMat4("model", shadowModel);
+        colorShader.setMat4("model", shadowModel);
 
         glBindVertexArray(shadowVAO);
         glDrawArrays(GL_TRIANGLE_FAN, 0, static_cast<GLsizei>(shadowVertices.size() / 3));
 
         // Tworzenie modelu
-        shader.use();
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
-        shader.setVec4("objectColor", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+        texturedShader.use();
+        texturedShader.setMat4("view", view);
+        texturedShader.setMat4("projection", projection);
         glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
-        shader.setMat4("model", modelMatrix);
+        texturedShader.setMat4("model", modelMatrix);
 
 		// Kąty w zależności od prędkości trzeba cos z ta prędkości ogarnąć, bo on nie przyspiesza, ale od razu pędzi z pełną prędkością
         float tiltAngleX = glm::clamp(droneBox.velocity.z / maxSpeed, -1.0f, 1.0f) * maxTiltAngle;
         float tiltAngleY = glm::clamp(droneBox.velocity.x / maxSpeed, -1.0f, 1.0f) * maxTiltAngle;
 
         // Funkcja rysująca
-        drawNodeWithRotation(rootNode, modelMatrix, shader.ID, nodeCounter, tiltAngleX, tiltAngleY);
+        drawNodeWithRotation(rootNode, modelMatrix, texturedShader.ID, nodeCounter, tiltAngleX, tiltAngleY);
         glfwSwapBuffers(window);
     }
 

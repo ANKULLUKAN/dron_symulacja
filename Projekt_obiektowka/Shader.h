@@ -12,7 +12,7 @@ public:
     GLuint ID; // Identyfikator programu shaderów OpenGL
 
     // Konstruktor: kompiluje i linkuje shadery z podanych Ÿróde³ (vertex + fragment)
-    Shader();
+    Shader(const std::string& vertexPath, const std::string& fragmentPath);
 
     // Destruktor: usuwa program shaderów z OpenGL
     ~Shader();
@@ -30,6 +30,7 @@ public:
 private:
     // Kompiluje pojedynczy shader (vertex lub fragment) z podanego Ÿród³a
     GLuint compileShader(GLenum type, const char* source);
+    std::string loadShaderSource(const std::string& filename);
 };
 
 #endif
