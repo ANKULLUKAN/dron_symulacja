@@ -92,20 +92,30 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
-std::vector<float> generateShadowVertices(float radiusX, float radiusZ, int segments = 32) {
-    std::vector<float> vertices;
-    vertices.push_back(0.0f); 
-    vertices.push_back(0.0f); 
-    vertices.push_back(0.0f); 
-    for (int i = 0; i <= segments; ++i) {
-        float angle = 2.0f * std::numbers::pi_v<float> * i / segments;
-        float x = radiusX * cos(angle);
-        float z = radiusZ * sin(angle);
-        vertices.push_back(x);
-        vertices.push_back(0.0f);
-        vertices.push_back(z);
-    }
-    return vertices;
+// --- Macierz rzutowania cienia na płaszczyznę y=0 ---
+glm::mat4 shadowMatrix(const glm::vec4& plane, const glm::vec3& lightDir) {
+    glm::mat4 mat(1.0f);
+    float dot = plane.x * lightDir.x + plane.y * lightDir.y + plane.z * lightDir.z;
+    mat[0][0] = dot - lightDir.x * plane.x;
+    mat[1][0] = 0.0f - lightDir.x * plane.y;
+    mat[2][0] = 0.0f - lightDir.x * plane.z;
+    mat[3][0] = 0.0f - lightDir.x * plane.w;
+
+    mat[0][1] = 0.0f - lightDir.y * plane.x;
+    mat[1][1] = dot - lightDir.y * plane.y;
+    mat[2][1] = 0.0f - lightDir.y * plane.z;
+    mat[3][1] = 0.0f - lightDir.y * plane.w;
+
+    mat[0][2] = 0.0f - lightDir.z * plane.x;
+    mat[1][2] = 0.0f - lightDir.z * plane.y;
+    mat[2][2] = dot - lightDir.z * plane.z;
+    mat[3][2] = 0.0f - lightDir.z * plane.w;
+
+    mat[0][3] = 0.0f;
+    mat[1][3] = 0.0f;
+    mat[2][3] = 0.0f;
+    mat[3][3] = dot;
+    return mat;
 }
 
 
@@ -120,6 +130,9 @@ int main() {
     glfwMakeContextCurrent(window);
     gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress));
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
 	// Załaduj model drona
     if (!LoadModel("../model/result.gltf")) return -1;
@@ -142,43 +155,27 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
     glEnableVertexAttribArray(0);
 
-    // Cień
-    std::vector<float> shadowVertices = generateShadowVertices(0.5f, 0.25f, 32); // elipsa pod dronem
-    unsigned int shadowVAO, shadowVBO;
-    glGenVertexArrays(1, &shadowVAO);
-    glGenBuffers(1, &shadowVBO);
-    glBindVertexArray(shadowVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, shadowVBO);
-    glBufferData(GL_ARRAY_BUFFER, shadowVertices.size() * sizeof(float), shadowVertices.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
-    glEnableVertexAttribArray(0);
-
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     while (!glfwWindowShouldClose(window)) {
-
-		// --- Obsługa wejścia i aktualizacja stanu drona ---
         int nodeCounter = 0;
         glfwPollEvents();
 
-        // --- Prosta fizyka drona: identyczna w każdej osi ---
+        // --- Prosta fizyka drona ---
         constexpr float accel = 0.05f;
         constexpr float damping = 0.99f;
         constexpr float maxSpeed = 0.05f;
         constexpr float stopThreshold = 0.005f;
         constexpr float maxTiltAngle = 10.0f;
 
-        // Ustawienie kamery śledzącej drona z góry pod kątem
         glm::vec3 cameraOffset(0.0f, 1.0f, 2.0f);
         glm::vec3 cameraPos = droneBox.position + cameraOffset;
         glm::mat4 view = glm::lookAt(cameraPos, droneBox.position, glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 100.0f);
 
-        // Zapamiętaj macierze do rzutowania kliknięcia
         g_view = view;
         g_projection = projection;
 
-        // Odczyt wejścia
         glm::vec3 input(0.0f);
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) input.z -= 0.1f;
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) input.z += 0.1f;
@@ -187,15 +184,12 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.y += 0.1f;
         if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) input.y -= 0.1f;
 
-        
-        // W głównej pętli:
         if (droneBroken) {
             static bool messageShown = false;
             if (!messageShown) {
                 MessageBoxA(nullptr, "Press R to restart.", "Collision!", MB_OK);
                 messageShown = true;
             }
-            // Czekaj na wciśnięcie R
             if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
                 droneBox.position = glm::vec3(0.0f, 5.0f, 0.0f);
                 droneBox.velocity = glm::vec3(0.0f);
@@ -203,16 +197,13 @@ int main() {
                 hasTarget = false;
                 messageShown = false;
             }
-            // Pomijaj resztę logiki, dopóki nie zrestartujesz
             glfwSwapBuffers(window);
             continue;
         }
 
-
-        // Sterowanie do miejsca kliknięcia
         if (hasTarget) {
             glm::vec3 toTarget = droneTarget - droneBox.position;
-            toTarget.y = 0.0f; // Lataj tylko po podłodze
+            toTarget.y = 0.0f;
             float dist = glm::length(toTarget);
             if (dist > 0.1f) {
                 glm::vec3 dir = glm::normalize(toTarget);
@@ -224,11 +215,9 @@ int main() {
             }
         }
 
-        // Ujednolicone sterowanie i blokada zmiany kierunku
         for (int i = 0; i < 3; ++i) {
             if (std::abs(input[i]) > 0.0f) {
-	            
-	            if (std::abs(droneBox.velocity[i]) < stopThreshold) {
+                if (std::abs(droneBox.velocity[i]) < stopThreshold) {
                     droneBox.velocity[i] = 0.0f;
                     droneBox.velocity[i] += input[i] * accel;
                 }
@@ -252,7 +241,7 @@ int main() {
             droneBox.position.y = 0.0f;
             droneBox.velocity.y = 0.0f;
             if (!droneBroken) {
-                droneBroken = true;             
+                droneBroken = true;
             }
         }
 
@@ -260,35 +249,52 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Tworzenie podłogi 
+        // Podłoga
         colorShader.use();
         colorShader.setMat4("view", view);
         colorShader.setMat4("projection", projection);
         colorShader.setVec4("objectColor", glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
         glm::mat4 floorModel = glm::mat4(1.0f);
         colorShader.setMat4("model", floorModel);
-
         glBindVertexArray(floorVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // Tworzenie modelu
+        glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
+
+        // --- Cień drona ---
+        colorShader.use();
+        colorShader.setMat4("view", view);
+        colorShader.setMat4("projection", projection);
+        colorShader.setVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.4f)); // cień półprzezroczysty
+
+        glm::vec4 groundPlane(0.0f, 1.0f, 0.0f, 0.0f);
+        glm::vec3 lightDir = glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f));
+        glm::mat4 shadowMat = shadowMatrix(groundPlane, lightDir);
+        glm::mat4 shadowModel = glm::translate(shadowMat * modelMatrix, glm::vec3(0, 0.01f, 0));
+        colorShader.setMat4("model", shadowModel);
+
+        for (const Mesh& mesh : meshes) {
+            glBindVertexArray(mesh.VAO);
+            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.indices.size()), GL_UNSIGNED_INT, nullptr);
+        }
+
+        // --- Model drona ---
         texturedShader.use();
         texturedShader.setMat4("view", view);
         texturedShader.setMat4("projection", projection);
-        glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
         texturedShader.setMat4("model", modelMatrix);
-        texturedShader.setVec3("lightDir", glm::vec3(-1.0f, -1.0f, -1.0f)); // kierunek światła
-        texturedShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));  // kolor światła
-        texturedShader.setVec3("viewPos", cameraPos); // pozycja kamery
+        texturedShader.setVec3("lightDir", glm::vec3(-1.0f, -1.0f, -1.0f));
+        texturedShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+        texturedShader.setVec3("viewPos", cameraPos);
 
-		// Kąty w zależności od prędkości trzeba cos z ta prędkości ogarnąć, bo on nie przyspiesza, ale od razu pędzi z pełną prędkością
         float tiltAngleX = glm::clamp(droneBox.velocity.z / maxSpeed, -1.0f, 1.0f) * maxTiltAngle;
         float tiltAngleY = glm::clamp(droneBox.velocity.x / maxSpeed, -1.0f, 1.0f) * maxTiltAngle;
 
-        // Funkcja rysująca
         drawNodeWithRotation(rootNode, modelMatrix, texturedShader.ID, nodeCounter, tiltAngleX, tiltAngleY);
+
         glfwSwapBuffers(window);
     }
+
 
     glfwTerminate();
     return 0;
