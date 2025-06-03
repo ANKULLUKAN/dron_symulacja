@@ -103,10 +103,48 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
 
     
     static float wingsAngle = 0.0f;
-    if (nodeCounter == 127 || nodeCounter == 130 || nodeCounter == 133 || nodeCounter == 136) {
-        wingsAngle += 0.05f; 
+    if (nodeCounter == 127) { // lewe skrzydlo tylne
+        wingsAngle += 0.001f;
         if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
-        localTransform = glm::rotate(localTransform, wingsAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+
+        glm::vec3 pivot(-8.4f, 4.2f, 8.4f); 
+        glm::mat4 toPivot = glm::translate(glm::mat4(1.0f), pivot);
+        glm::mat4 fromPivot = glm::translate(glm::mat4(1.0f), -pivot);
+        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), wingsAngle, glm::vec3(0, 1, 0));
+        localTransform = toPivot * rotation * fromPivot * localTransform;
+    }
+    
+    if (nodeCounter == 130) { // lewe skrzydlo z przodu
+        wingsAngle += 0.05f;
+        if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
+
+        glm::vec3 pivot(-8.5f, 4.2f, -8.0f); 
+        glm::mat4 toPivot = glm::translate(glm::mat4(1.0f), pivot);
+        glm::mat4 fromPivot = glm::translate(glm::mat4(1.0f), -pivot);
+        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), wingsAngle, glm::vec3(0, 1, 0));
+        localTransform = toPivot * rotation * fromPivot * localTransform;
+    }
+    
+    if (nodeCounter == 133) { // prawe skrzydlo z tylu 
+        wingsAngle += 0.05f;
+        if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
+
+        glm::vec3 pivot(+8.5f, 4.2f, -8.0f); 
+        glm::mat4 toPivot = glm::translate(glm::mat4(1.0f), pivot);
+        glm::mat4 fromPivot = glm::translate(glm::mat4(1.0f), -pivot);
+        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), wingsAngle, glm::vec3(0, 1, 0));
+        localTransform = toPivot * rotation * fromPivot * localTransform;
+    }
+
+	if (nodeCounter == 136) { // prawe skrzydlo z przodu
+        wingsAngle += 0.05f;
+        if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
+
+        glm::vec3 pivot(+8.5f, 4.2f, 8.0f); 
+        glm::mat4 toPivot = glm::translate(glm::mat4(1.0f), pivot);
+        glm::mat4 fromPivot = glm::translate(glm::mat4(1.0f), -pivot);
+        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), wingsAngle, glm::vec3(0, 1, 0));
+        localTransform = toPivot * rotation * fromPivot * localTransform;
     }
 
     glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), tiltAngleX, glm::vec3(1.0f, 0.0f, 0.0f));
