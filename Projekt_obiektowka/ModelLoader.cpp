@@ -9,6 +9,9 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp> // potrzebne do dekompozycji
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 // Globalne kontenery na siatki i korzeń drzewa sceny
 std::vector<Mesh> meshes;
 Node rootNode;
@@ -33,7 +36,7 @@ Node processNode(aiNode* ainode) {
 }
 
 // Ładowanie modelu z pliku (np. .gltf, .obj) przy użyciu Assimp
-bool loadModel(const std::string& path) {
+bool LoadModel(const std::string& path) {
     Assimp::Importer importer;
     // Wczytaj scenę i przetwórz: triangulacja, generowanie normalnych, łączenie wierzchołków
     const aiScene* scene = importer.ReadFile(path,
@@ -52,6 +55,10 @@ bool loadModel(const std::string& path) {
             Vertex vertex;
             vertex.position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
             vertex.normal = { mesh->mNormals[i].x,  mesh->mNormals[i].y,  mesh->mNormals[i].z };
+            if (mesh->mTextureCoords[0]) // Sprawdź, czy są współrzędne tekstur
+                vertex.texCoord = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
+            else
+                vertex.texCoord = glm::vec2(0.0f, 0.0f);
             myMesh.vertices.push_back(vertex);
         }
         // Wczytaj indeksy (każda twarz/face to trójkąt)
@@ -76,11 +83,53 @@ bool loadModel(const std::string& path) {
             myMesh.indices.size() * sizeof(unsigned int),
             myMesh.indices.data(), GL_STATIC_DRAW);
 
-        // Ustawienie atrybutów wierzchołków (pozycja)
+		// Ustawienie atrybutów wierzchołków (pozycja, normalna, współrzędne tekstury)
+        myMesh.textureID = 0;
+        if (scene->HasMaterials() && mesh->mMaterialIndex >= 0) {
+            aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+            if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+                aiString texPath;
+                if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS) {
+                    std::string texName = texPath.C_Str();
+                    if (!texName.empty() && texName[0] == '*') {
+                        // Tekstura osadzona w pliku GLTF
+                        int texIndex = std::atoi(texName.c_str() + 1);
+                        const aiTexture* texture = scene->mTextures[texIndex];
+                        if (texture) {
+                            if (texture->mHeight == 0) {
+                                // Compressed (np. PNG/JPG)
+                                myMesh.textureID = LoadTextureFromMemory(
+                                    reinterpret_cast<unsigned char*>(texture->pcData),
+                                    texture->mWidth
+                                );
+                            }
+                            else {
+                                // Uncompressed (rzadko spotykane, np. RAW RGBA)
+                                std::cerr << "Uncompressed embedded textures are not supported." << std::endl;
+                            }
+                        }
+                    }
+                    else {
+                        // Zwykła tekstura z pliku
+                        std::string dir = path.substr(0, path.find_last_of("/\\"));
+                        std::string fullPath = dir + "/" + texPath.C_Str();
+                        myMesh.textureID = LoadTexture(fullPath);
+                    }
+                }
+            }
+        }
+
+        // Pozycja: location 0
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
         glEnableVertexAttribArray(0);
-        glBindVertexArray(0);
+        // Normal: location 1
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+        glEnableVertexAttribArray(1);
+        // TexCoord: location 2
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
+        glEnableVertexAttribArray(2);
 
+        glBindVertexArray(0);
         meshes.push_back(myMesh);
     }
 
@@ -89,13 +138,60 @@ bool loadModel(const std::string& path) {
     return true;
 }
 
+GLuint LoadTextureFromMemory(unsigned char* data, int size) {
+    int width, height, nrChannels;
+    unsigned char* imgData = stbi_load_from_memory(data, size, &width, &height, &nrChannels, 0);
+    if (!imgData) {
+        std::cerr << "Failed to load embedded texture from memory" << std::endl;
+        return 0;
+    }
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
 
+    GLenum format = nrChannels == 4 ? GL_RGBA : GL_RGB;
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, imgData);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_image_free(imgData);
+    return texture;
+}
+
+// Ładowanie tekstury z pliku przy użyciu stb_image
+GLuint LoadTexture(const std::string& path) {
+    int width, height, nrChannels;
+    unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+    if (!data) {
+        std::cerr << "Failed to load texture: " << path << std::endl;
+        return 0;
+    }
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    GLenum format = nrChannels == 4 ? GL_RGBA : GL_RGB;
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_image_free(data);
+    return texture;
+}
 
 // na razie odpuszcam obrot skrzydel
 void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, float& tiltAngleX, float& tiltAngleY)
 {
     // Ograniczenie kąta przechyłu do 10 stopni (w radianach)
-    const float maxTilt = glm::radians(10.0f);
+    constexpr float maxTilt = glm::radians(10.0f);
     tiltAngleX = glm::clamp(tiltAngleX, -maxTilt, maxTilt);
     tiltAngleY = glm::clamp(tiltAngleY, -maxTilt, maxTilt);
 
@@ -155,6 +251,13 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
         const Mesh& mesh = meshes[i];
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(globalTransform));
         glBindVertexArray(mesh.VAO);
+
+        if (mesh.textureID) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, mesh.textureID);
+            glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
+        }
+
         glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
     }
 

@@ -1,37 +1,20 @@
 #include "Shader.h"
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <glm/gtc/type_ptr.hpp>
 
-// Prosty shader wierzcho³ków
-const char* vertexSource = R"(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-void main() {
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
-}
-)";
-
-// Prosty shader fragmentów z kolorem przekazywanym przez uniform
-const char* fragmentSource = R"(
-#version 330 core
-out vec4 FragColor;
-uniform vec4 objectColor;
-void main() {
-    FragColor = objectColor;
-}
-)";
-
 // Konstruktor: kompiluje shadery, linkuje program i sprawdza b³êdy
-Shader::Shader() {
-    // Kompilacja vertex shadera
-    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexSource);
-    // Kompilacja fragment shadera
-    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
+Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
+    
+    std::string vertexCode = loadShaderSource(vertexPath);
+    std::string fragmentCode = loadShaderSource(fragmentPath);
+    const char* vShaderCode = vertexCode.c_str();
+    const char* fShaderCode = fragmentCode.c_str();
 
-    // Tworzenie programu shaderów i do³¹czanie shaderów
+    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vShaderCode);
+    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fShaderCode);
+
     ID = glCreateProgram();
     glAttachShader(ID, vertexShader);
     glAttachShader(ID, fragmentShader);
@@ -71,6 +54,10 @@ void Shader::setVec4(const std::string& name, const glm::vec4& value) const {
     glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
 }
 
+void Shader::setVec3(const std::string& name, const glm::vec3& value) const {
+    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
+}
+
 // Kompiluje pojedynczy shader (vertex lub fragment) i sprawdza b³êdy kompilacji
 GLuint Shader::compileShader(GLenum type, const char* source) {
     GLuint shader = glCreateShader(type);
@@ -87,4 +74,11 @@ GLuint Shader::compileShader(GLenum type, const char* source) {
     }
 
     return shader;
+}
+
+std::string Shader::loadShaderSource(const std::string& filename) {
+    std::ifstream file(filename);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
 }
