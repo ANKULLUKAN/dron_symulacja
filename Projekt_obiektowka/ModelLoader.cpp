@@ -187,7 +187,7 @@ GLuint LoadTexture(const std::string& path) {
     return texture;
 }
 
-// na razie odpuszcam obrot skrzydel
+
 void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, float& tiltAngleX, float& tiltAngleY)
 {
     // Ograniczenie kąta przechyłu do 10 stopni (w radianach)
