@@ -271,23 +271,15 @@ int main() {
         glBindVertexArray(floorVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // Tworzenie +/- "cienia"
-        colorShader.use();
-        colorShader.setMat4("view", view);
-        colorShader.setMat4("projection", projection);
-        colorShader.setVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.4f));
-        glm::mat4 shadowModel = glm::translate(glm::mat4(1.0f), glm::vec3(droneBox.position.x, 0.01f, droneBox.position.z));
-        colorShader.setMat4("model", shadowModel);
-
-        glBindVertexArray(shadowVAO);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, static_cast<GLsizei>(shadowVertices.size() / 3));
-
         // Tworzenie modelu
         texturedShader.use();
         texturedShader.setMat4("view", view);
         texturedShader.setMat4("projection", projection);
         glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
         texturedShader.setMat4("model", modelMatrix);
+        texturedShader.setVec3("lightDir", glm::vec3(-1.0f, -1.0f, -1.0f)); // kierunek światła
+        texturedShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));  // kolor światła
+        texturedShader.setVec3("viewPos", cameraPos); // pozycja kamery
 
 		// Kąty w zależności od prędkości trzeba cos z ta prędkości ogarnąć, bo on nie przyspiesza, ale od razu pędzi z pełną prędkością
         float tiltAngleX = glm::clamp(droneBox.velocity.z / maxSpeed, -1.0f, 1.0f) * maxTiltAngle;

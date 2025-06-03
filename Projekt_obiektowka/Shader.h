@@ -25,6 +25,7 @@ public:
 
     // Ustawia uniform vec4 o podanej nazwie (np. kolor obiektu)
     void setVec4(const std::string& name, const glm::vec4& value) const;
+    void setVec3(const std::string& name, const glm::vec3& value) const;
 
 
 private:
