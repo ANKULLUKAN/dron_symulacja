@@ -22,11 +22,11 @@ glm::mat4 aiMatrix4x4ToGlm(const aiMatrix4x4& mat) {
 }
 
 // Rekurencyjne przetwarzanie węzła drzewa sceny Assimp na własną strukturę Node
-Node processNode(aiNode* ainode) {
+Node processNode(const aiNode* ainode) {
     Node node;
     node.transform = aiMatrix4x4ToGlm(ainode->mTransformation);
     // Dodaj indeksy siatek przypisanych do tego węzła
-    std::cout << "Node name: " << ainode->mName.C_Str() << std::endl;
+    std::cout << "Node name: " << ainode->mName.C_Str() << '\n';
     for (unsigned int i = 0; i < ainode->mNumMeshes; i++)
         node.meshIndices.push_back(ainode->mMeshes[i]);
     // Przetwarzaj dzieci rekurencyjnie
@@ -42,7 +42,7 @@ bool LoadModel(const std::string& path) {
     const aiScene* scene = importer.ReadFile(path,
         aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_JoinIdenticalVertices);
     if (!scene || !scene->HasMeshes()) {
-        std::cerr << "Assimp error: " << importer.GetErrorString() << std::endl;
+        std::cerr << "Assimp error: " << importer.GetErrorString() << '\n';
         return false;
     }
 
@@ -94,8 +94,7 @@ bool LoadModel(const std::string& path) {
                     if (!texName.empty() && texName[0] == '*') {
                         // Tekstura osadzona w pliku GLTF
                         int texIndex = std::atoi(texName.c_str() + 1);
-                        const aiTexture* texture = scene->mTextures[texIndex];
-                        if (texture) {
+                        if (const aiTexture* texture = scene->mTextures[texIndex]) {
                             if (texture->mHeight == 0) {
                                 // Compressed (np. PNG/JPG)
                                 myMesh.textureID = LoadTextureFromMemory(
@@ -105,7 +104,7 @@ bool LoadModel(const std::string& path) {
                             }
                             else {
                                 // Uncompressed (rzadko spotykane, np. RAW RGBA)
-                                std::cerr << "Uncompressed embedded textures are not supported." << std::endl;
+                                std::cerr << "Uncompressed embedded textures are not supported." << '\n';
                             }
                         }
                     }
@@ -120,13 +119,18 @@ bool LoadModel(const std::string& path) {
         }
 
         // Pozycja: location 0
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
+            static_cast<void*>(nullptr));
         glEnableVertexAttribArray(0);
+
         // Normal: location 1
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
+            reinterpret_cast<void*>(offsetof(Vertex, normal)));
         glEnableVertexAttribArray(1);
-        // TexCoord: location 2
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
+
+        // TexCord: location 2
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
+            reinterpret_cast<void*>(offsetof(Vertex, texCoord)));
         glEnableVertexAttribArray(2);
 
         glBindVertexArray(0);
@@ -138,7 +142,7 @@ bool LoadModel(const std::string& path) {
     return true;
 }
 
-GLuint LoadTextureFromMemory(unsigned char* data, int size) {
+GLuint LoadTextureFromMemory(const unsigned char* data, const int size) {
     int width, height, nrChannels;
     unsigned char* imgData = stbi_load_from_memory(data, size, &width, &height, &nrChannels, 0);
     if (!imgData) {
@@ -149,7 +153,7 @@ GLuint LoadTextureFromMemory(unsigned char* data, int size) {
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    GLenum format = nrChannels == 4 ? GL_RGBA : GL_RGB;
+    const GLenum format = nrChannels == 4 ? GL_RGBA : GL_RGB;
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, imgData);
 
     glGenerateMipmap(GL_TEXTURE_2D);
@@ -167,14 +171,14 @@ GLuint LoadTexture(const std::string& path) {
     int width, height, nrChannels;
     unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
     if (!data) {
-        std::cerr << "Failed to load texture: " << path << std::endl;
+        std::cerr << "Failed to load texture: " << path << '\n';
         return 0;
     }
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    GLenum format = nrChannels == 4 ? GL_RGBA : GL_RGB;
+    const GLenum format = nrChannels == 4 ? GL_RGBA : GL_RGB;
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
     glGenerateMipmap(GL_TEXTURE_2D);
@@ -188,18 +192,12 @@ GLuint LoadTexture(const std::string& path) {
 }
 
 
-void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, int& nodeCounter, float& tiltAngleX, float& tiltAngleY)
-{
-    // Ograniczenie kąta przechyłu do 10 stopni (w radianach)
-    constexpr float maxTilt = glm::radians(10.0f);
-    tiltAngleX = glm::clamp(tiltAngleX, -maxTilt, maxTilt);
-    tiltAngleY = glm::clamp(tiltAngleY, -maxTilt, maxTilt);
-
+void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, const GLuint shaderProgram,
+    int& nodeCounter, const float& tiltAngleX, const float& tiltAngleY) {
     glm::mat4 localTransform = node.transform;
 
-    
     static float wingsAngle = 0.0f;
-    if (nodeCounter == 127) { // lewe skrzydlo tylne
+    if (nodeCounter == 127) { // lewe skrzydło tylne
         wingsAngle += 0.001f;
         if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
 
@@ -210,7 +208,7 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
         localTransform = toPivot * rotation * fromPivot * localTransform;
     }
     
-    if (nodeCounter == 130) { // lewe skrzydlo z przodu
+    if (nodeCounter == 130) { // lewe skrzydło z przodu
         wingsAngle += 0.05f;
         if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
 
@@ -221,7 +219,7 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
         localTransform = toPivot * rotation * fromPivot * localTransform;
     }
     
-    if (nodeCounter == 133) { // prawe skrzydlo z tylu 
+    if (nodeCounter == 133) { // prawe skrzydło z tylu 
         wingsAngle += 0.05f;
         if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
 
@@ -232,7 +230,7 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
         localTransform = toPivot * rotation * fromPivot * localTransform;
     }
 
-	if (nodeCounter == 136) { // prawe skrzydlo z przodu
+	if (nodeCounter == 136) { // prawe skrzydło z przodu
         wingsAngle += 0.05f;
         if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
 
@@ -258,7 +256,7 @@ void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GL
             glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
         }
 
-        glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
     }
 
     nodeCounter++;

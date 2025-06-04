@@ -3,12 +3,11 @@
 #include <cmath>
 #include <glm/glm.hpp>
 
-void DroneController::updateTilt(const glm::vec2& tiltInput, float deltaTime) {
-    float tiltSpeed = 1.0f; // rad/s, jak szybko dron siê przechyla
-
-    // Dla ka¿dej osi: jeœli trzymasz klawisz, zwiêkszaj/zmniejszaj tilt, jeœli nie - wracaj do zera
+void DroneController::UpdateTilt(const glm::vec2& tiltInput, const float deltaTime) {
+	// Dla ka¿dej osi: jeœli trzymasz klawisz, zwiêkszaj/zmniejszaj tilt, jeœli nie - wracaj do zera
     for (int i = 0; i < 2; ++i) {
-        if (std::abs(tiltInput[i]) > 0.01f) {
+	    constexpr float tiltSpeed = 0.07f;
+	    if (std::abs(tiltInput[i]) > 0.01f) {
             tilt[i] += tiltInput[i] * tiltSpeed * deltaTime;
         }
         else {
@@ -28,16 +27,17 @@ void DroneController::updateTilt(const glm::vec2& tiltInput, float deltaTime) {
     }
 }
 
-void DroneController::updatePhysics(
+void DroneController::UpdatePhysics(
     glm::vec3& position,
     glm::vec3& velocity,
     const glm::vec2& tiltInput,
-    float verticalInput,
-    float deltaTime
+    const float verticalInput,
+    const float deltaTime,
+    bool& collidedWithGround
 ) {
 
     // 2. Aktualizuj tilt (pochylenie) w kierunku tiltTarget
-    updateTilt(tiltInput, deltaTime);
+    UpdateTilt(tiltInput, deltaTime);
 
     // 3. Oblicz si³ê ci¹gu w XZ na podstawie tilt
     glm::vec3 thrust(
@@ -47,10 +47,10 @@ void DroneController::updatePhysics(
     );
 
     // 4. Opór powietrza (drag)
-    glm::vec3 drag = -velocity * dragCoeff;
+    const glm::vec3 drag = -velocity * dragCoefficient;
 
     // 5. Suma si³
-    glm::vec3 force = thrust + drag;
+    const glm::vec3 force = thrust + drag;
 
     // 6. Aktualizacja prêdkoœci (F = m*a)
     velocity += (force / mass) * deltaTime;
@@ -61,6 +61,13 @@ void DroneController::updatePhysics(
     // 8. Minimalny próg prêdkoœci - zatrzymaj drona ca³kowicie, gdy jest bardzo wolny
     if (glm::length(velocity) < 0.0000001f) {
         velocity = glm::vec3(0.0f);
+    }
+
+    // 9. Kolizja z pod³og¹ (y = 0)
+    if (position.y < 0.0f) {
+        position.y = 0.0f;
+        velocity.y = 0.0f;
+        collidedWithGround = true;
     }
 }
 

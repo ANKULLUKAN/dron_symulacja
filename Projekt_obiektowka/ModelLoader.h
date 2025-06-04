@@ -37,7 +37,7 @@ bool LoadModel(const std::string& path);
 
 // £adowanie tekstury z pliku przy u¿yciu stb_image
 GLuint LoadTexture(const std::string& path);
-GLuint LoadTextureFromMemory(unsigned char* data, int size);
+GLuint LoadTextureFromMemory(const unsigned char* data, int size);
 
 // Indeksy wêz³ów, które maj¹ byæ obracane oraz aktualny k¹t obrotu (do animacji)
 extern std::vector<int> rotatingNodeIndices;
@@ -45,5 +45,5 @@ extern float rotationAngle;
 
 // Rysuje wêze³ (i jego dzieci) z uwzglêdnieniem rotacji wybranych wêz³ów
 void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, GLuint shaderProgram, 
-    int& nodeCounter, float& tiltAngleX, float& tiltAngleY);
+    int& nodeCounter, const float& tiltAngleX, const float& tiltAngleY);
 

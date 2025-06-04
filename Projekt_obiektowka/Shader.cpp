@@ -7,26 +7,26 @@
 // Konstruktor: kompiluje shadery, linkuje program i sprawdza b³êdy
 Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
     
-    std::string vertexCode = loadShaderSource(vertexPath);
-    std::string fragmentCode = loadShaderSource(fragmentPath);
+    std::string vertexCode = LoadShaderSource(vertexPath);
+    std::string fragmentCode = LoadShaderSource(fragmentPath);
     const char* vShaderCode = vertexCode.c_str();
     const char* fShaderCode = fragmentCode.c_str();
 
-    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vShaderCode);
-    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fShaderCode);
+    GLuint vertexShader = CompileShader(GL_VERTEX_SHADER, vShaderCode);
+    GLuint fragmentShader = CompileShader(GL_FRAGMENT_SHADER, fShaderCode);
 
-    ID = glCreateProgram();
-    glAttachShader(ID, vertexShader);
-    glAttachShader(ID, fragmentShader);
-    glLinkProgram(ID);
+    Id = glCreateProgram();
+    glAttachShader(Id, vertexShader);
+    glAttachShader(Id, fragmentShader);
+    glLinkProgram(Id);
 
     // Sprawdzenie poprawnoœci linkowania programu
     int success;
-    glGetProgramiv(ID, GL_LINK_STATUS, &success);
+    glGetProgramiv(Id, GL_LINK_STATUS, &success);
     if (!success) {
         char infoLog[512];
-        glGetProgramInfoLog(ID, 512, nullptr, infoLog);
-        std::cerr << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+        glGetProgramInfoLog(Id, 512, nullptr, infoLog);
+        std::cerr << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << '\n';
     }
 
     // Usuwanie niepotrzebnych ju¿ shaderów (s¹ w programie)
@@ -36,31 +36,31 @@ Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
 
 // Destruktor: usuwa program shaderów z OpenGL
 Shader::~Shader() {
-    glDeleteProgram(ID);
+    glDeleteProgram(Id);
 }
 
 // Ustawia ten program shaderów jako aktywny
-void Shader::use() const {
-    glUseProgram(ID);
+void Shader::Use() const {
+    glUseProgram(Id);
 }
 
 // Ustawia uniform mat4 o podanej nazwie (np. macierz modelu, widoku, projekcji)
-void Shader::setMat4(const std::string& name, const glm::mat4& mat) const {
-    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
+void Shader::SetMat4(const std::string& name, const glm::mat4& mat) const {
+    glUniformMatrix4fv(glGetUniformLocation(Id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
 // Ustawia uniform vec4 o podanej nazwie (np. kolor obiektu)
-void Shader::setVec4(const std::string& name, const glm::vec4& value) const {
-    glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
+void Shader::SetVec4(const std::string& name, const glm::vec4& value) const {
+    glUniform4fv(glGetUniformLocation(Id, name.c_str()), 1, glm::value_ptr(value));
 }
 
-void Shader::setVec3(const std::string& name, const glm::vec3& value) const {
-    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
+void Shader::SetVec3(const std::string& name, const glm::vec3& value) const {
+    glUniform3fv(glGetUniformLocation(Id, name.c_str()), 1, glm::value_ptr(value));
 }
 
 // Kompiluje pojedynczy shader (vertex lub fragment) i sprawdza b³êdy kompilacji
-GLuint Shader::compileShader(GLenum type, const char* source) {
-    GLuint shader = glCreateShader(type);
+GLuint Shader::CompileShader(const GLenum type, const char* source) {
+	const GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, &source, nullptr);
     glCompileShader(shader);
 
@@ -70,14 +70,14 @@ GLuint Shader::compileShader(GLenum type, const char* source) {
     if (!success) {
         char infoLog[512];
         glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        std::cerr << "ERROR::SHADER::COMPILATION_FAILED\n" << infoLog << std::endl;
+        std::cerr << "ERROR::SHADER::COMPILATION_FAILED\n" << infoLog << '\n';
     }
 
     return shader;
 }
 
-std::string Shader::loadShaderSource(const std::string& filename) {
-    std::ifstream file(filename);
+std::string Shader::LoadShaderSource(const std::string& filename) {
+	const std::ifstream file(filename);
     std::stringstream buffer;
     buffer << file.rdbuf();
     return buffer.str();
