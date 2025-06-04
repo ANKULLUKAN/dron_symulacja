@@ -59,43 +59,6 @@ float floorVertices[] = {
     -5.0f, 0.0f, -5.0f,
 };
 
-// --- Funkcja rzutująca kliknięcie na podłogę (y=0) ---
-glm::vec3 screenToWorld(float mouseX, float mouseY, int width, int height, const glm::mat4& view, const glm::mat4& projection, const glm::vec3& camPos) {
-    float x = (2.0f * mouseX) / width - 1.0f;
-    float y = 1.0f - (2.0f * mouseY) / height;
-    glm::vec4 ray_clip = glm::vec4(x, y, -1.0f, 1.0f);
-
-    glm::vec4 ray_eye = glm::inverse(projection) * ray_clip;
-    ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
-
-    glm::vec3 ray_world = glm::vec3(glm::inverse(view) * ray_eye);
-    ray_world = glm::normalize(ray_world);
-
-    // Przecięcie promienia z płaszczyzną y=0
-    float t = -camPos.y / ray_world.y;
-    glm::vec3 intersection = camPos + t * ray_world;
-    return intersection;
-}
-
-// --- Callback myszy ---
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        double xpos, ypos;
-        glfwGetCursorPos(window, &xpos, &ypos);
-        int width, height;
-        glfwGetWindowSize(window, &width, &height);
-       
-        glm::vec3 cameraOffset(0.0f, 1.0f, 2.0f);
-        glm::vec3 camPos = g_droneBox->position + cameraOffset;
-
-        // Użyj aktualnych macierzy
-        glm::vec3 target = screenToWorld(static_cast<float>(xpos), static_cast<float>(ypos), width, height, g_view, g_projection, camPos);
-        target.y = 0.0f; // Lądujemy na podłodze
-        droneTarget = target;
-        hasTarget = true;
-    }
-}
-
 // Wierzchołki elipsy (cień drona)
 constexpr int ellipseSegments = 40;
 float ellipseVertices[(ellipseSegments + 2) * 3]; // środek + segmenty + powrót do pierwszego
@@ -144,8 +107,6 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(floorVertices), floorVertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
     glEnableVertexAttribArray(0);
-
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
 	// Cień drona (elipsa)
     generateEllipseVertices(0.15f, 0.15f); // promienie elipsy
