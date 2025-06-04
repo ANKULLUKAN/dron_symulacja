@@ -5,9 +5,12 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
 #include <numbers>
+#include <windows.h>
+
 #include "Shader.h"
 #include "ModelLoader.h"
-#include <windows.h>
+#include "DroneController.h"
+
 
 // Struktura opisująca pudełko fizyczne (pozycja, prędkość, rozmiar, masa)
 struct PhysicsBox {
@@ -92,34 +95,23 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
-// --- Macierz rzutowania cienia na płaszczyznę y=0 ---
-glm::mat4 shadowMatrix(const glm::vec4& plane, const glm::vec3& lightDir) {
-    glm::mat4 mat(1.0f);
-    float dot = plane.x * lightDir.x + plane.y * lightDir.y + plane.z * lightDir.z;
-    mat[0][0] = dot - lightDir.x * plane.x;
-    mat[1][0] = 0.0f - lightDir.x * plane.y;
-    mat[2][0] = 0.0f - lightDir.x * plane.z;
-    mat[3][0] = 0.0f - lightDir.x * plane.w;
-
-    mat[0][1] = 0.0f - lightDir.y * plane.x;
-    mat[1][1] = dot - lightDir.y * plane.y;
-    mat[2][1] = 0.0f - lightDir.y * plane.z;
-    mat[3][1] = 0.0f - lightDir.y * plane.w;
-
-    mat[0][2] = 0.0f - lightDir.z * plane.x;
-    mat[1][2] = 0.0f - lightDir.z * plane.y;
-    mat[2][2] = dot - lightDir.z * plane.z;
-    mat[3][2] = 0.0f - lightDir.z * plane.w;
-
-    mat[0][3] = 0.0f;
-    mat[1][3] = 0.0f;
-    mat[2][3] = 0.0f;
-    mat[3][3] = dot;
-    return mat;
+// Wierzchołki elipsy (cień drona)
+constexpr int ellipseSegments = 40;
+float ellipseVertices[(ellipseSegments + 2) * 3]; // środek + segmenty + powrót do pierwszego
+void generateEllipseVertices(float rx, float rz) {
+    ellipseVertices[0] = 0.0f; // środek x
+    ellipseVertices[1] = 0.0f; // środek y
+    ellipseVertices[2] = 0.0f; // środek z
+    for (int i = 0; i <= ellipseSegments; ++i) {
+        float angle = 2.0f * std::numbers::pi_v<float> *i / ellipseSegments;
+        ellipseVertices[3 * (i + 1) + 0] = rx * std::cos(angle);
+        ellipseVertices[3 * (i + 1) + 1] = 0.0f;
+        ellipseVertices[3 * (i + 1) + 2] = rz * std::sin(angle);
+    }
 }
 
-
 bool droneBroken = false;
+
 int main() {
 
     // Inicjalizacja GLFW i OpenGL
@@ -133,7 +125,6 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-
 	// Załaduj model drona
     if (!LoadModel("../model/result.gltf")) return -1;
 
@@ -141,7 +132,7 @@ int main() {
     Shader colorShader("shader/color.vert", "shader/color.frag");
     Shader texturedShader("shader/texture.vert", "shader/texture.frag");
 
-    PhysicsBox droneBox(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(1.0f, 0.3f, 1.0f), 1.0f);
+    PhysicsBox droneBox(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.3f, 1.0f), 1.0f);
     g_droneBox = &droneBox;
     g_window = window;
 
@@ -157,16 +148,30 @@ int main() {
 
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
+	// Cień drona (elipsa)
+    generateEllipseVertices(0.15f, 0.15f); // promienie elipsy
+    unsigned int ellipseVAO, ellipseVBO;
+    glGenVertexArrays(1, &ellipseVAO);
+    glGenBuffers(1, &ellipseVBO);
+    glBindVertexArray(ellipseVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, ellipseVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ellipseVertices), ellipseVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
+    glEnableVertexAttribArray(0);
+
+    DroneController droneController(0.2f, 0.02f, 0.2f, 1.0f);
+
+
     while (!glfwWindowShouldClose(window)) {
+
+        // --- Aktualizacja tytułu okna z pozycją drona ---
+        char title[128];
+        snprintf(title, sizeof(title), "Dron - Pozycja: X=%.2f Y=%.2f Z=%.2f",
+            droneBox.position.x, droneBox.position.y, droneBox.position.z);
+        glfwSetWindowTitle(window, title);
+
         int nodeCounter = 0;
         glfwPollEvents();
-
-        // --- Prosta fizyka drona ---
-        constexpr float accel = 0.05f;
-        constexpr float damping = 0.99f;
-        constexpr float maxSpeed = 0.05f;
-        constexpr float stopThreshold = 0.005f;
-        constexpr float maxTiltAngle = 10.0f;
 
         glm::vec3 cameraOffset(0.0f, 1.0f, 2.0f);
         glm::vec3 cameraPos = droneBox.position + cameraOffset;
@@ -176,74 +181,17 @@ int main() {
         g_view = view;
         g_projection = projection;
 
-        glm::vec3 input(0.0f);
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) input.z -= 0.1f;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) input.z += 0.1f;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) input.x -= 0.1f;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) input.x += 0.1f;
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) input.y += 0.1f;
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) input.y -= 0.1f;
+        glm::vec2 tiltInput(0.0f);
+        float verticalInput = 0.0f;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) tiltInput.x -= 1.0f; // pitch w przód
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) tiltInput.x += 1.0f; // pitch w tył
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) tiltInput.y -= 1.0f; // roll w prawo
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) tiltInput.y += 1.0f; // roll w lewo
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) verticalInput += 1.0f; // w górę
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) verticalInput -= 1.0f; // w dół
 
-        if (droneBroken) {
-            static bool messageShown = false;
-            if (!messageShown) {
-                MessageBoxA(nullptr, "Press R to restart.", "Collision!", MB_OK);
-                messageShown = true;
-            }
-            if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-                droneBox.position = glm::vec3(0.0f, 5.0f, 0.0f);
-                droneBox.velocity = glm::vec3(0.0f);
-                droneBroken = false;
-                hasTarget = false;
-                messageShown = false;
-            }
-            glfwSwapBuffers(window);
-            continue;
-        }
+        droneController.updatePhysics(droneBox.position, droneBox.velocity, tiltInput, verticalInput, 1/60.f);
 
-        if (hasTarget) {
-            glm::vec3 toTarget = droneTarget - droneBox.position;
-            toTarget.y = 0.0f;
-            float dist = glm::length(toTarget);
-            if (dist > 0.1f) {
-                glm::vec3 dir = glm::normalize(toTarget);
-                input.x = dir.x * 0.1f;
-                input.z = dir.z * 0.1f;
-            }
-            else {
-                hasTarget = false;
-            }
-        }
-
-        for (int i = 0; i < 3; ++i) {
-            if (std::abs(input[i]) > 0.0f) {
-                if (std::abs(droneBox.velocity[i]) < stopThreshold) {
-                    droneBox.velocity[i] = 0.0f;
-                    droneBox.velocity[i] += input[i] * accel;
-                }
-                else if ((input[i] > 0.0f && droneBox.velocity[i] > 0.0f) ||
-                    (input[i] < 0.0f && droneBox.velocity[i] < 0.0f)) {
-                    droneBox.velocity[i] += input[i] * accel;
-                }
-            }
-        }
-
-        droneBox.velocity *= damping;
-
-        for (int i = 0; i < 3; ++i) {
-            if (droneBox.velocity[i] > maxSpeed) droneBox.velocity[i] = maxSpeed;
-            if (droneBox.velocity[i] < -maxSpeed) droneBox.velocity[i] = -maxSpeed;
-        }
-
-        droneBox.position += droneBox.velocity;
-
-        if (droneBox.position.y < 0.0f) {
-            droneBox.position.y = 0.0f;
-            droneBox.velocity.y = 0.0f;
-            if (!droneBroken) {
-                droneBroken = true;
-            }
-        }
 
         // --- Renderowanie sceny ---
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
@@ -261,22 +209,22 @@ int main() {
 
         glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
 
-        // --- Cień drona ---
+        // --- Cień drona jako elipsa ---
         colorShader.use();
         colorShader.setMat4("view", view);
         colorShader.setMat4("projection", projection);
-        colorShader.setVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.4f)); // cień półprzezroczysty
+        colorShader.setVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.35f)); // półprzezroczysty cień
 
-        glm::vec4 groundPlane(0.0f, 1.0f, 0.0f, 0.0f);
-        glm::vec3 lightDir = glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f));
-        glm::mat4 shadowMat = shadowMatrix(groundPlane, lightDir);
-        glm::mat4 shadowModel = glm::translate(shadowMat * modelMatrix, glm::vec3(0, 0.01f, 0));
-        colorShader.setMat4("model", shadowModel);
+        // Model elipsy przesunięty pod drona (na podłogę)
+        glm::mat4 shadowEllipseModel = glm::translate(glm::mat4(1.0f), glm::vec3(droneBox.position.x, 0.01f, droneBox.position.z));
+        // Opcjonalnie: skalowanie cienia w zależności od wysokości drona
+        float scaleY = 1.0f - glm::clamp(droneBox.position.y / 10.0f, 0.0f, 0.7f);
+        shadowEllipseModel = glm::scale(shadowEllipseModel, glm::vec3(1.0f, 1.0f, scaleY));
+        colorShader.setMat4("model", shadowEllipseModel);
 
-        for (const Mesh& mesh : meshes) {
-            glBindVertexArray(mesh.VAO);
-            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.indices.size()), GL_UNSIGNED_INT, nullptr);
-        }
+        glBindVertexArray(ellipseVAO);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, ellipseSegments + 2);
+
 
         // --- Model drona ---
         texturedShader.use();
@@ -287,14 +235,14 @@ int main() {
         texturedShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
         texturedShader.setVec3("viewPos", cameraPos);
 
-        float tiltAngleX = glm::clamp(droneBox.velocity.z / maxSpeed, -1.0f, 1.0f) * maxTiltAngle;
-        float tiltAngleY = glm::clamp(droneBox.velocity.x / maxSpeed, -1.0f, 1.0f) * maxTiltAngle;
+        // Pobierz aktualny kąt pochylenia z kontrolera (w stopniach)
+        float tiltAngleX = glm::degrees(droneController.tilt.x); // pitch (oś Z)
+        float tiltAngleY = glm::degrees(droneController.tilt.y); // roll (oś X)
 
         drawNodeWithRotation(rootNode, modelMatrix, texturedShader.ID, nodeCounter, tiltAngleX, tiltAngleY);
 
         glfwSwapBuffers(window);
     }
-
 
     glfwTerminate();
     return 0;
