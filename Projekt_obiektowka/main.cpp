@@ -10,6 +10,7 @@
 #include "ModelLoader.h"
 
 
+// jebac 
 // Wierzchołki sześcianu
 float cubeVertices[] = {
     -0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f,  0.5f, -0.5f,
