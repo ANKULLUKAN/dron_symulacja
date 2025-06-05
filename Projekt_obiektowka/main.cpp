@@ -113,7 +113,7 @@ int main() {
         glm::vec2 tiltInput(0.0f);
         float verticalInput = 0.0f;
 
-        // Obsługa pada (GLFW_JOYSTICK_1)
+        // Podstawowa obsługa pada (GLFW_JOYSTICK_1)
         if (glfwJoystickPresent(GLFW_JOYSTICK_1) && glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
             GLFWgamepadstate state;
             if (glfwGetGamepadState(GLFW_JOYSTICK_1, &state)) {
