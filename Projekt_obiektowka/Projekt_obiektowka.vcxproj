@@ -146,6 +146,7 @@
     <ClCompile Include="..\libraries\glad\src\glad.c" />
     <ClCompile Include="Drone.cpp" />
     <ClCompile Include="DroneController.cpp" />
+    <ClCompile Include="floor.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="rotation.cpp" />
@@ -155,6 +156,7 @@
     <ClInclude Include="..\libraries\include\stb_image.h" />
     <ClInclude Include="Drone.h" />
     <ClInclude Include="DroneController.h" />
+    <ClInclude Include="floor.h" />
     <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="rotation.h" />
     <ClInclude Include="Shader.h" />

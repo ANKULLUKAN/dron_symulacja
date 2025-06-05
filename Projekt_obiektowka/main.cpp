@@ -8,9 +8,10 @@
 #include "Drone.h"
 #include "Shader.h"
 #include "ModelLoader.h"
+#include "floor.h"
 
 
-// jebac 
+
 // Wierzchołki sześcianu
 float cubeVertices[] = {
     -0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f,  0.5f, -0.5f,
@@ -25,17 +26,6 @@ float cubeVertices[] = {
      0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f, -0.5f,
     -0.5f,  0.5f, -0.5f,  0.5f,  0.5f, -0.5f,  0.5f,  0.5f,  0.5f,
      0.5f,  0.5f,  0.5f, -0.5f,  0.5f,  0.5f, -0.5f,  0.5f, -0.5f
-};
-
-// Wierzchołki podłogi (prostokąt 10x10)
-float floorVertices[] = {
-    -5.0f, 0.0f, -5.0f,
-     5.0f, 0.0f, -5.0f,
-     5.0f, 0.0f,  5.0f,
-
-     5.0f, 0.0f,  5.0f,
-    -5.0f, 0.0f,  5.0f,
-    -5.0f, 0.0f, -5.0f,
 };
 
 constexpr int ellipseSegments = 40;
@@ -74,16 +64,6 @@ int main() {
 
     Drone drone(glm::vec3(0.0f, 1.0f, 0.0f));
 
-    // Podłoga
-    unsigned int floorVAO, floorVBO;
-    glGenVertexArrays(1, &floorVAO);
-    glGenBuffers(1, &floorVBO);
-    glBindVertexArray(floorVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, floorVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(floorVertices), floorVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
-    glEnableVertexAttribArray(0);
-
     // Cień drona
     generateEllipseVertices(0.2f, 0.1f); // promienie elipsy (dostosuj do rozmiaru drona)
     unsigned int ellipseVAO, ellipseVBO;
@@ -113,6 +93,18 @@ int main() {
 
         glm::vec2 tiltInput(0.0f);
         float verticalInput = 0.0f;
+
+
+
+
+
+
+
+
+
+
+
+
 
         // Podstawowa obsługa pada (GLFW_JOYSTICK_1)
         if (glfwJoystickPresent(GLFW_JOYSTICK_1) && glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
@@ -167,15 +159,8 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// --- Podłoga ---
-        glm::mat4 floorModel = glm::mat4(1.0f);
-
-        colorShader.Use();
-        colorShader.SetMat4("view", view);
-        colorShader.SetMat4("projection", projection);
-        colorShader.SetVec4("objectColor", glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
-        colorShader.SetMat4("model", floorModel);
-        glBindVertexArray(floorVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+		Floor floor;
+        floor.Draw(colorShader, view, projection);
 
     	// --- Cień drona (elipsa) ---
         glm::mat4 shadowEllipseModel = glm::translate(glm::mat4(1.0f), glm::vec3(drone.getDronePos().x, 0.01f, drone.getDronePos().z));
