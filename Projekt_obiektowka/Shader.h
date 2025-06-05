@@ -25,8 +25,9 @@ public:
 
     // Ustawia uniform vec4 o podanej nazwie (np. kolor obiektu)
     void SetVec4(const std::string& name, const glm::vec4& value) const;
-    void SetVec3(const std::string& name, const glm::vec3& value) const;
 
+	// Ustawia uniform vec3 o podanej nazwie (np. wektor normalny, kolor œwiat³a)
+    void SetVec3(const std::string& name, const glm::vec3& value) const;
 
 private:
     // Kompiluje pojedynczy shader (vertex lub fragment) z podanego Ÿród³a

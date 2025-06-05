@@ -25,13 +25,6 @@ struct PhysicsBox {
     }
 };
 
-// --- Zmienne globalne do obsługi celu ---
-glm::vec3 droneTarget(0.0f);
-bool hasTarget = false;
-PhysicsBox* g_droneBox = nullptr;
-glm::mat4 g_view, g_projection;
-GLFWwindow* g_window = nullptr;
-
 // Wierzchołki sześcianu
 float cubeVertices[] = {
     -0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f,  0.5f, -0.5f,
@@ -59,48 +52,19 @@ float floorVertices[] = {
     -5.0f, 0.0f, -5.0f,
 };
 
-//// Wierzchołki elipsy (cień drona)
-//constexpr int ellipseSegments = 40;
-//float ellipseVertices[(ellipseSegments + 2) * 3]; // środek + segmenty + powrót do pierwszego
-//void generateEllipseVertices(float rx, float rz) {
-//    ellipseVertices[0] = 0.0f; // środek x
-//    ellipseVertices[1] = 0.0f; // środek y
-//    ellipseVertices[2] = 0.0f; // środek z
-//    for (int i = 0; i <= ellipseSegments; ++i) {
-//        float angle = 2.0f * std::numbers::pi_v<float> *i / ellipseSegments;
-//        ellipseVertices[3 * (i + 1) + 0] = rx * std::cos(angle);
-//        ellipseVertices[3 * (i + 1) + 1] = 0.0f;
-//        ellipseVertices[3 * (i + 1) + 2] = rz * std::sin(angle);
-//    }
-//}
-
-glm::mat4 createShadowMatrix(const glm::vec4& plane, const glm::vec3& lightDir) {
-    float a = plane.x, b = plane.y, c = plane.z, d = plane.w;
-    float lx = lightDir.x, ly = lightDir.y, lz = lightDir.z;
-    float dot = a * lx + b * ly + c * lz;
-    glm::mat4 mat(0.0f);
-    mat[0][0] = dot - a * lx;
-    mat[0][1] = -a * ly;
-    mat[0][2] = -a * lz;
-    mat[0][3] = -a * d;
-
-    mat[1][0] = -b * lx;
-    mat[1][1] = dot - b * ly;
-    mat[1][2] = -b * lz;
-    mat[1][3] = -b * d;
-
-    mat[2][0] = -c * lx;
-    mat[2][1] = -c * ly;
-    mat[2][2] = dot - c * lz;
-    mat[2][3] = -c * d;
-
-    mat[3][0] = -d * lx;
-    mat[3][1] = -d * ly;
-    mat[3][2] = -d * lz;
-    mat[3][3] = dot - d * d;
-    return mat;
+constexpr int ellipseSegments = 40;
+float ellipseVertices[(ellipseSegments + 2) * 3];
+void generateEllipseVertices(float rx, float rz) {
+    ellipseVertices[0] = 0.0f; // środek x
+    ellipseVertices[1] = 0.0f; // środek y
+    ellipseVertices[2] = 0.0f; // środek z
+    for (int i = 0; i <= ellipseSegments; ++i) {
+        float angle = 2.0f * std::numbers::pi_v<float> *i / ellipseSegments;
+        ellipseVertices[3 * (i + 1) + 0] = rx * std::cos(angle);
+        ellipseVertices[3 * (i + 1) + 1] = 0.0f;
+        ellipseVertices[3 * (i + 1) + 2] = rz * std::sin(angle);
+    }
 }
-
 
 int main() {
 
@@ -123,8 +87,6 @@ int main() {
     Shader texturedShader("shader/texture.vert", "shader/texture.frag");
 
     PhysicsBox droneBox(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.3f, 1.0f), 1.0f);
-    g_droneBox = &droneBox;
-    g_window = window;
 
     // Podłoga
     unsigned int floorVAO, floorVBO;
@@ -136,26 +98,17 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
     glEnableVertexAttribArray(0);
 
-	//// Cień drona (elipsa)
- //   generateEllipseVertices(0.15f, 0.15f); // promienie elipsy
- //   unsigned int ellipseVAO, ellipseVBO;
- //   glGenVertexArrays(1, &ellipseVAO);
- //   glGenBuffers(1, &ellipseVBO);
- //   glBindVertexArray(ellipseVAO);
- //   glBindBuffer(GL_ARRAY_BUFFER, ellipseVBO);
- //   glBufferData(GL_ARRAY_BUFFER, sizeof(ellipseVertices), ellipseVertices, GL_STATIC_DRAW);
- //   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
- //   glEnableVertexAttribArray(0);
-
     // Cień drona
-    unsigned int cubeVAO, cubeVBO;
-    glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &cubeVBO);
-    glBindVertexArray(cubeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+    generateEllipseVertices(0.2f, 0.1f); // promienie elipsy (dostosuj do rozmiaru drona)
+    unsigned int ellipseVAO, ellipseVBO;
+    glGenVertexArrays(1, &ellipseVAO);
+    glGenBuffers(1, &ellipseVBO);
+    glBindVertexArray(ellipseVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, ellipseVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ellipseVertices), ellipseVertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
     glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
 
     DroneController droneController(0.2f, 0.02f, 0.2f, 1.0f);
     bool droneBroken = false;
@@ -175,9 +128,6 @@ int main() {
         glm::vec3 cameraPos = droneBox.position + cameraOffset;
         glm::mat4 view = glm::lookAt(cameraPos, droneBox.position, glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 100.0f);
-
-        g_view = view;
-        g_projection = projection;
 
         glm::vec2 tiltInput(0.0f);
         float verticalInput = 0.0f;
@@ -208,12 +158,12 @@ int main() {
                 }
             }
         }
-      
+
         // --- Renderowanie sceny ---
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Podłoga
+		// --- Podłoga ---
         colorShader.Use();
         colorShader.SetMat4("view", view);
         colorShader.SetMat4("projection", projection);
@@ -223,43 +173,23 @@ int main() {
         glBindVertexArray(floorVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        //// --- Cień drona jako elipsa ---
-        //colorShader.Use();
-        //colorShader.SetMat4("view", view);
-        //colorShader.SetMat4("projection", projection);
-        //colorShader.SetVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.35f)); // półprzezroczysty cień
-        //// Model elipsy przesunięty pod drona (na podłogę)
-        //glm::mat4 shadowEllipseModel = glm::translate(glm::mat4(1.0f), glm::vec3(droneBox.position.x, 0.01f, droneBox.position.z));
-        //// Opcjonalnie: skalowanie cienia w zależności od wysokości drona
-        //float scaleY = 1.0f - glm::clamp(droneBox.position.y / 10.0f, 0.0f, 0.7f);
-        //shadowEllipseModel = glm::scale(shadowEllipseModel, glm::vec3(1.0f, 1.0f, scaleY));
-        //colorShader.SetMat4("model", shadowEllipseModel);
-        //glBindVertexArray(ellipseVAO);
-        //glDrawArrays(GL_TRIANGLE_FAN, 0, ellipseSegments + 2);
-
-        // Kierunek światła
-        glm::vec3 lightDir = glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f));
-
-        // Shadow matrix dla podłogi y=0
-        glm::mat4 shadowMat = createShadowMatrix(glm::vec4(0, 1, 0, 0), lightDir);
-
-        // Model drona
-        glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
-
-        // Model cienia = shadowMat * modelMatrix
-        glm::mat4 shadowModel = glm::translate(shadowMat * modelMatrix, glm::vec3(0.0f, 0.01f, 0.0f));
-
-
-        // Renderuj cień (np. czarny, półprzezroczysty, VAO drona lub uproszczony kształt)
+    	// --- Cień drona (elipsa) ---
         colorShader.Use();
         colorShader.SetMat4("view", view);
         colorShader.SetMat4("projection", projection);
-        colorShader.SetMat4("model", shadowModel);
-        colorShader.SetVec4("objectColor", glm::vec4(0, 0, 0, 0.35f));
-        glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        colorShader.SetVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.35f)); // półprzezroczysty cień
+        glm::mat4 shadowEllipseModel = glm::translate(glm::mat4(1.0f), glm::vec3(droneBox.position.x, 0.01f, droneBox.position.z));
+        // Opcjonalnie: skalowanie cienia w zależności od wysokości drona
+        float scaleY = 1.0f - glm::clamp(droneBox.position.y / 10.0f, 0.0f, 0.7f);
+        shadowEllipseModel = glm::scale(shadowEllipseModel, glm::vec3(1.0f, 1.0f, scaleY));
+        colorShader.SetMat4("model", shadowEllipseModel);
+        glBindVertexArray(ellipseVAO);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, ellipseSegments + 2);
 
         // --- Model drona ---
+        glm::vec3 lightDir = glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f));
+        glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
+
         texturedShader.Use();
         texturedShader.SetMat4("view", view);
         texturedShader.SetMat4("projection", projection);
