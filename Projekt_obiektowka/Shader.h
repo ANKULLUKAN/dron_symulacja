@@ -6,6 +6,8 @@
 #include <string>
 #include <glm/glm.hpp>
 
+#endif
+
 // Klasa Shader - zarz¹dza programem shaderów OpenGL (kompilacja, u¿ycie, ustawianie uniformów)
 class Shader {
 public:
@@ -34,5 +36,3 @@ private:
     static GLuint CompileShader(GLenum type, const char* source);
     static std::string LoadShaderSource(const std::string& filename);
 };
-
-#endif

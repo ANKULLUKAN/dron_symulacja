@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\libraries\glad\src\glad.c" />
+    <ClCompile Include="Drone.cpp" />
     <ClCompile Include="DroneController.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
@@ -151,6 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libraries\include\stb_image.h" />
+    <ClInclude Include="Drone.h" />
     <ClInclude Include="DroneController.h" />
     <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="Shader.h" />

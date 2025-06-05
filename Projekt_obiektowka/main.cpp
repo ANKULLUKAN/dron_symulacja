@@ -1,29 +1,14 @@
 ﻿#include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <cmath>
-#include <iostream>
-#include <numbers>
 #include <windows.h>
 
+#include "Drone.h"
 #include "Shader.h"
 #include "ModelLoader.h"
-#include "DroneController.h"
 
-
-// Struktura opisująca pudełko fizyczne (pozycja, prędkość, rozmiar, masa)
-struct PhysicsBox {
-    glm::vec3 position;
-    glm::vec3 velocity;
-    glm::vec3 size;
-    float mass;
-
-    PhysicsBox(glm::vec3 pos, glm::vec3 sz, float m)
-        : position(pos), velocity(0.0f), size(sz), mass(m) {
-    }
-};
 
 // Wierzchołki sześcianu
 float cubeVertices[] = {
@@ -86,7 +71,7 @@ int main() {
     Shader colorShader("shader/color.vert", "shader/color.frag");
     Shader texturedShader("shader/texture.vert", "shader/texture.frag");
 
-    PhysicsBox droneBox(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.3f, 1.0f), 1.0f);
+    Drone drone(glm::vec3(0.0f, 1.0f, 0.0f));
 
     // Podłoga
     unsigned int floorVAO, floorVBO;
@@ -110,7 +95,6 @@ int main() {
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
 
-    DroneController droneController(0.2f, 0.02f, 0.2f, 1.0f);
     bool droneBroken = false;
 
     while (!glfwWindowShouldClose(window)) {
@@ -118,36 +102,54 @@ int main() {
         // --- Aktualizacja tytułu okna z pozycją drona ---
         char title[128];
         snprintf(title, sizeof(title), "Dron - Pozycja: X=%.2f Y=%.2f Z=%.2f",
-            droneBox.position.x, droneBox.position.y, droneBox.position.z);
+            drone.getDronePos().x, drone.getDronePos().y, drone.getDronePos().z);
         glfwSetWindowTitle(window, title);
 
-        int nodeCounter = 0;
         glfwPollEvents();
 
-        glm::vec3 cameraOffset(0.0f, 1.0f, 2.0f);
-        glm::vec3 cameraPos = droneBox.position + cameraOffset;
-        glm::mat4 view = glm::lookAt(cameraPos, droneBox.position, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view = glm::lookAt(drone.getCameraPos(), drone.getDronePos(), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 100.0f);
 
         glm::vec2 tiltInput(0.0f);
         float verticalInput = 0.0f;
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) tiltInput.x -= 1.0f; // pitch w przód
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) tiltInput.x += 1.0f; // pitch w tył
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) tiltInput.y -= 1.0f; // roll w prawo
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) tiltInput.y += 1.0f; // roll w lewo
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) verticalInput += 1.0f; // w górę
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) verticalInput -= 1.0f; // w dół
 
-        droneController.UpdatePhysics(droneBox.position, droneBox.velocity, tiltInput, verticalInput, 1/60.f, droneBroken);
+        // Obsługa pada (GLFW_JOYSTICK_1)
+        if (glfwJoystickPresent(GLFW_JOYSTICK_1) && glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
+            GLFWgamepadstate state;
+            if (glfwGetGamepadState(GLFW_JOYSTICK_1, &state)) {
+                // Lewy drążek: pitch (oś Y), roll (oś X)
+                tiltInput.x = state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]; // pitch: przód/tył
+                tiltInput.y = state.axes[GLFW_GAMEPAD_AXIS_LEFT_X];  // roll: lewo/prawo
+
+                // DEADZONE
+                const float deadzone = 0.15f;
+                if (std::abs(tiltInput.x) < deadzone) tiltInput.x = 0.0f;
+                if (std::abs(tiltInput.y) < deadzone) tiltInput.y = 0.0f;
+
+
+                // Spusty: w górę (RT), w dół (LT)
+                float up = (state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] + 1.0f) / 2.0f;   // 0..1
+                float down = (state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] + 1.0f) / 2.0f;  // 0..1
+                verticalInput = up - down; // RT podnosi, LT opuszcza
+            }
+        }
+        
+        // Obsługa klawiatury
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) tiltInput.x -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) tiltInput.x += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) tiltInput.y -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) tiltInput.y += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) verticalInput += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) verticalInput -= 1.0f;
+
+        drone.updatePhysics(tiltInput, verticalInput, droneBroken);
 
         if (droneBroken) {
             static bool messageShown = false;
             while (1 > 0) {
                 glfwPollEvents();
                 if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-                    droneBox.position = glm::vec3(0.0f, 1.0f, 0.0f);
-                    droneBox.velocity = glm::vec3(0.0f);
-                    droneController.tilt = glm::vec2(0.0f);
+                    drone.resetDronePosition();
                     droneBroken = false;
 					messageShown = false; // resetuj komunikat
                     break; // wyjdź z pętli, aby kontynuować grę
@@ -164,42 +166,27 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// --- Podłoga ---
+        glm::mat4 floorModel = glm::mat4(1.0f);
+
         colorShader.Use();
         colorShader.SetMat4("view", view);
         colorShader.SetMat4("projection", projection);
         colorShader.SetVec4("objectColor", glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
-        glm::mat4 floorModel = glm::mat4(1.0f);
         colorShader.SetMat4("model", floorModel);
         glBindVertexArray(floorVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
     	// --- Cień drona (elipsa) ---
+        glm::mat4 shadowEllipseModel = glm::translate(glm::mat4(1.0f), glm::vec3(drone.getDronePos().x, 0.01f, drone.getDronePos().z));
         colorShader.Use();
         colorShader.SetMat4("view", view);
         colorShader.SetMat4("projection", projection);
         colorShader.SetVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.35f)); // półprzezroczysty cień
-        glm::mat4 shadowEllipseModel = glm::translate(glm::mat4(1.0f), glm::vec3(droneBox.position.x, 0.01f, droneBox.position.z));
-        // Opcjonalnie: skalowanie cienia w zależności od wysokości drona
-        float scaleY = 1.0f - glm::clamp(droneBox.position.y / 10.0f, 0.0f, 0.7f);
-        shadowEllipseModel = glm::scale(shadowEllipseModel, glm::vec3(1.0f, 1.0f, scaleY));
         colorShader.SetMat4("model", shadowEllipseModel);
         glBindVertexArray(ellipseVAO);
         glDrawArrays(GL_TRIANGLE_FAN, 0, ellipseSegments + 2);
 
-        // --- Model drona ---
-        glm::vec3 lightDir = glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f));
-        glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), droneBox.position);
-
-        texturedShader.Use();
-        texturedShader.SetMat4("view", view);
-        texturedShader.SetMat4("projection", projection);
-        texturedShader.SetMat4("model", modelMatrix);
-        texturedShader.SetVec3("lightDir", lightDir);
-        texturedShader.SetVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-        texturedShader.SetVec3("viewPos", cameraPos);
-
-        drawNodeWithRotation(rootNode, modelMatrix, texturedShader.Id, nodeCounter, 
-            droneController.tilt.x, droneController.tilt.y);
+		drone.drawDrone(projection, view);
 
         glfwSwapBuffers(window);
     }

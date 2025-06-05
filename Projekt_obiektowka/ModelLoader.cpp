@@ -1,13 +1,15 @@
 ﻿#include "ModelLoader.h"
+
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
-#include <glm/gtc/type_ptr.hpp>
-#include <iostream>
-#include <GLFW/glfw3.h>
-#include <windows.h>
+#include <assimp/scene.h>
 
+#include <glm/gtc/type_ptr.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/matrix_decompose.hpp> // potrzebne do dekompozycji
+#include <glm/gtx/matrix_decompose.hpp>
+
+#include <iostream>
+#include <windows.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"

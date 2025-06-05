@@ -1,6 +1,8 @@
 #pragma once
+
 #include <glm/glm.hpp>
 #include <numbers>
+
 
 // Klasa do obs³ugi sterowania dronem z p³ynnym przyspieszaniem i zwalnianiem
 class DroneController {

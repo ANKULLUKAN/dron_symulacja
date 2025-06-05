@@ -1,7 +1,9 @@
 #include "DroneController.h"
+
 #include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
+
 
 void DroneController::UpdateTilt(const glm::vec2& tiltInput, const float deltaTime) {
 	// Dla ka¿dej osi: jeœli trzymasz klawisz, zwiêkszaj/zmniejszaj tilt, jeœli nie - wracaj do zera
