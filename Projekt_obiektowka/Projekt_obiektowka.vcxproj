@@ -148,6 +148,7 @@
     <ClCompile Include="DroneController.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
+    <ClCompile Include="rotation.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -155,6 +156,7 @@
     <ClInclude Include="Drone.h" />
     <ClInclude Include="DroneController.h" />
     <ClInclude Include="ModelLoader.h" />
+    <ClInclude Include="rotation.h" />
     <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>

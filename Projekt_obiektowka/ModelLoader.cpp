@@ -1,15 +1,14 @@
 ﻿#include "ModelLoader.h"
-
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
-#include <assimp/scene.h>
-
 #include <glm/gtc/type_ptr.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/matrix_decompose.hpp>
-
 #include <iostream>
+#include <GLFW/glfw3.h>
 #include <windows.h>
+
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp> // potrzebne do dekompozycji
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -69,6 +68,7 @@ bool LoadModel(const std::string& path) {
             for (unsigned int j = 0; j < face.mNumIndices; ++j)
                 myMesh.indices.push_back(face.mIndices[j]);
         }
+
         // Tworzenie VAO, VBO, EBO dla siatki w OpenGL
         glGenVertexArrays(1, &myMesh.VAO);
         glGenBuffers(1, &myMesh.VBO);
@@ -192,78 +192,3 @@ GLuint LoadTexture(const std::string& path) {
     stbi_image_free(data);
     return texture;
 }
-
-
-void drawNodeWithRotation(const Node& node, const glm::mat4& parentTransform, const GLuint shaderProgram,
-    int& nodeCounter, const float& tiltAngleX, const float& tiltAngleY) {
-    glm::mat4 localTransform = node.transform;
-
-    static float wingsAngle = 0.0f;
-    if (nodeCounter == 127) { // lewe skrzydło tylne
-        wingsAngle += 0.001f;
-        if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
-
-        glm::vec3 pivot(-8.4f, 4.2f, 8.4f); 
-        glm::mat4 toPivot = glm::translate(glm::mat4(1.0f), pivot);
-        glm::mat4 fromPivot = glm::translate(glm::mat4(1.0f), -pivot);
-        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), wingsAngle, glm::vec3(0, 1, 0));
-        localTransform = toPivot * rotation * fromPivot * localTransform;
-    }
-    
-    if (nodeCounter == 130) { // lewe skrzydło z przodu
-        wingsAngle += 0.05f;
-        if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
-
-        glm::vec3 pivot(-8.5f, 4.2f, -8.0f); 
-        glm::mat4 toPivot = glm::translate(glm::mat4(1.0f), pivot);
-        glm::mat4 fromPivot = glm::translate(glm::mat4(1.0f), -pivot);
-        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), wingsAngle, glm::vec3(0, 1, 0));
-        localTransform = toPivot * rotation * fromPivot * localTransform;
-    }
-    
-    if (nodeCounter == 133) { // prawe skrzydło z tylu 
-        wingsAngle += 0.05f;
-        if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
-
-        glm::vec3 pivot(+8.5f, 4.2f, -8.0f); 
-        glm::mat4 toPivot = glm::translate(glm::mat4(1.0f), pivot);
-        glm::mat4 fromPivot = glm::translate(glm::mat4(1.0f), -pivot);
-        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), wingsAngle, glm::vec3(0, 1, 0));
-        localTransform = toPivot * rotation * fromPivot * localTransform;
-    }
-
-	if (nodeCounter == 136) { // prawe skrzydło z przodu
-        wingsAngle += 0.05f;
-        if (wingsAngle > glm::two_pi<float>()) wingsAngle -= glm::two_pi<float>();
-
-        glm::vec3 pivot(+8.5f, 4.2f, 8.0f); 
-        glm::mat4 toPivot = glm::translate(glm::mat4(1.0f), pivot);
-        glm::mat4 fromPivot = glm::translate(glm::mat4(1.0f), -pivot);
-        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), wingsAngle, glm::vec3(0, 1, 0));
-        localTransform = toPivot * rotation * fromPivot * localTransform;
-    }
-
-    glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), tiltAngleX, glm::vec3(1.0f, 0.0f, 0.0f));
-    glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), tiltAngleY, glm::vec3(0.0f, 0.0f, -1.0f));
-    glm::mat4 globalTransform = parentTransform * rotationY * rotationX * localTransform;
-
-    for (unsigned int i : node.meshIndices) {
-        const Mesh& mesh = meshes[i];
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(globalTransform));
-        glBindVertexArray(mesh.VAO);
-
-        if (mesh.textureID) {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, mesh.textureID);
-            glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
-        }
-
-        glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
-    }
-
-    nodeCounter++;
-    for (const Node& child : node.children) {
-        drawNodeWithRotation(child, globalTransform, shaderProgram, nodeCounter, tiltAngleX, tiltAngleY);
-    }
-}
-

@@ -101,8 +101,8 @@ int main() {
 
         // --- Aktualizacja tytułu okna z pozycją drona ---
         char title[128];
-        snprintf(title, sizeof(title), "Dron - Pozycja: X=%.2f Y=%.2f Z=%.2f",
-            drone.getDronePos().x, drone.getDronePos().y, drone.getDronePos().z);
+        snprintf(title, sizeof(title), "Dron - Pozycja: X=%.2f Y=%.2f Z=%.2f Predkosc skrzydel(obr/s): %.2f",
+            drone.getDronePos().x, drone.getDronePos().y, drone.getDronePos().z, drone.getWingsSpeed() * 150);
         glfwSetWindowTitle(window, title);
 
         glfwPollEvents();
