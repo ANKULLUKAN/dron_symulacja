@@ -3,6 +3,7 @@
 #include "DroneController.h"
 #include "rotation.h"
 #include "Shader.h"
+#include "ModelLoader.h"
 
 
 class Drone {
@@ -12,11 +13,28 @@ public:
 	Drone(const glm::vec3& startPosition)
 		:texturedShader(Shader("shader/texture.vert", "shader/texture.frag")), position(startPosition),
 	velocity(0.0f), controller(0.1f, 0.02f, 0.2f, 1.0f), renderer(NodeRenderer(meshes)) {
+
+		if (!meshes.empty()) {
+			droneVertices.clear();
+			for (const auto& vertex : meshes[0].vertices) {
+				droneVertices.push_back(vertex.position);
+			}
+			droneIndices = meshes[0].indices;
+		}
 	}
 
 	// Funkcja rysuj¹ca drona
-	void drawDrone(const glm::mat4& projection, const glm::mat4& view);
+	void drawDrone(const glm::mat4& projection, const glm::mat4& view, const glm::vec3 lightDir);
 
+	// Funkcja rysuj¹ca cieñ drona (elipsa)
+	void drawDroneShadow(const Shader& shader, const glm::mat4& projection, const glm::mat4& view) const;
+	glm::vec3 projectToFloor(const glm::vec3& point, const glm::vec3& lightDir);
+	void generateDroneShadowMesh(const glm::mat4& modelMatrix, const glm::vec3& lightDir);
+	void drawDroneShadow(const Shader& shader, const glm::mat4& projection,
+		const glm::mat4& view, const glm::vec3& lightDir);
+
+
+	// Funkcja dodaj¹ca masê do drona (np. po kolizji z obiektem)
 	void addMass(float mass);
 
 	// Funkcje pomocnicze do pobierania pozycji kamery i drona oraz prêdkoœci skrzyde³
@@ -36,4 +54,9 @@ private:
 	glm::vec3 velocity; // Prêdkoœæ drona
 	DroneController controller; // Kontroler drona
 	NodeRenderer renderer; // Renderer wêz³ów (do animacji skrzyde³ek i innych elementów)
+
+	std::vector<glm::vec3> droneVertices;
+	std::vector<unsigned int> droneIndices;
+	std::vector<glm::vec3> shadowVertices;
+	std::vector<unsigned int> shadowIndices;
 };

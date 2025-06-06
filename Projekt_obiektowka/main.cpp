@@ -12,20 +12,6 @@
 #include "Object.h"
 
 
-constexpr int ellipseSegments = 40;
-float ellipseVertices[(ellipseSegments + 2) * 3];
-void generateEllipseVertices(float rx, float rz) {
-    ellipseVertices[0] = 0.0f; // środek x
-    ellipseVertices[1] = 0.0f; // środek y
-    ellipseVertices[2] = 0.0f; // środek z
-    for (int i = 0; i <= ellipseSegments; ++i) {
-        float angle = 2.0f * std::numbers::pi_v<float> *i / ellipseSegments;
-        ellipseVertices[3 * (i + 1) + 0] = rx * std::cos(angle);
-        ellipseVertices[3 * (i + 1) + 1] = 0.0f;
-        ellipseVertices[3 * (i + 1) + 2] = rz * std::sin(angle);
-    }
-}
-
 int main() {
 
     // Inicjalizacja GLFW i OpenGL
@@ -48,21 +34,12 @@ int main() {
 
     Drone drone(glm::vec3(0.0f, 1.0f, 0.0f));
 
-    // Cień drona
-    generateEllipseVertices(0.2f, 0.1f); // promienie elipsy (dostosuj do rozmiaru drona)
-    unsigned int ellipseVAO, ellipseVBO;
-    glGenVertexArrays(1, &ellipseVAO);
-    glGenBuffers(1, &ellipseVBO);
-    glBindVertexArray(ellipseVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, ellipseVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ellipseVertices), ellipseVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
-
 	// Inicjalizacja kostki
     Cube cube(0.1f, 0.01f);
     bool droneBroken = false;
+    
+	// Ustawienie kierunku światła
+    glm::vec3 lightDir = glm::normalize(glm::vec3(-10.0f, -10.0f, -10.0f));
 
     while (!glfwWindowShouldClose(window)) {
 
@@ -74,13 +51,10 @@ int main() {
 
         glfwPollEvents();
 
-        glm::mat4 view = glm::lookAt(drone.getCameraPos(), drone.getDronePos(), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 100.0f);
-
         glm::vec2 tiltInput(0.0f);
         float verticalInput = 0.0f;
 
-        // Obsługa klawiatury
+    	// Obsługa klawiatury
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) tiltInput.x -= 1.0f;
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) tiltInput.x += 1.0f;
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) tiltInput.y -= 1.0f;
@@ -111,32 +85,26 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// --- Ustawienia shadera ---
+        glm::mat4 view = glm::lookAt(drone.getCameraPos(), drone.getDronePos(), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 100.0f);
+
 		// --- Podłoga ---
 		Floor floor;
         floor.Draw(colorShader, view, projection);
 
-    	// --- Cień drona (elipsa) ---
-        glm::mat4 shadowEllipseModel = glm::translate(glm::mat4(1.0f), glm::vec3(drone.getDronePos().x, 0.01f, drone.getDronePos().z));
-        colorShader.Use();
-        colorShader.SetMat4("view", view);
-        colorShader.SetMat4("projection", projection);
-        colorShader.SetVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 0.35f)); // półprzezroczysty cień
-        colorShader.SetMat4("model", shadowEllipseModel);
-        glBindVertexArray(ellipseVAO);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, ellipseSegments + 2);
+		// --- Rysowanie drona i jego cienia ---
+        drone.drawDroneShadow(colorShader, projection, view, lightDir);
+		drone.drawDrone(projection, view, lightDir);
 
-		drone.drawDrone(projection, view);
-
-        
-        
+		// --- Rysowanie kostki ---
 		cube.Update(1.0f / 60.0f, drone.getDronePos()); // Aktualizacja fizyki kostki;
 		cube.Draw(colorShader, view, projection);
-        int licznik = 0;
-        if (cube.contactWithDrone(drone.getDronePos()) && licznik != 1)
-        {
+        int counter = 0;
+        if (cube.contactWithDrone(drone.getDronePos()) && counter != 1) {
 			drone.addMass(cube.mass);
-            licznik++;
-        };
+            counter++;
+        }
 
         glfwSwapBuffers(window);
     }

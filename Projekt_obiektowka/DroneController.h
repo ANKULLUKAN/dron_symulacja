@@ -11,9 +11,6 @@ public:
 	DroneController(const float thrustStrength, const float verticalThrustStrength, const float dragCoefficient, const float mass)
 		: mass(mass), thrustStrength(thrustStrength), verticalThrustStrength(verticalThrustStrength), dragCoefficient(dragCoefficient) {
 	}
-
-
-  
     
     glm::vec2 tilt = glm::vec2(0.0f); // [pitch, roll]
 

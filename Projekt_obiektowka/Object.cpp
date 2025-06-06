@@ -7,8 +7,8 @@ Cube::Cube(float size, float mass)
     setupMesh(size);
 }
 
-bool Cube::contactWithDrone(glm::vec3 dron_position) {
-    float distance = glm::length(position - dron_position);
+bool Cube::contactWithDrone(glm::vec3 drone_position) {
+    float distance = glm::length(position - drone_position);
     const float epsilon = 0.1f; // granica b³êdu (promieñ kontaktu)
 
     if (distance < epsilon) {
