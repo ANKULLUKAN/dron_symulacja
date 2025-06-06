@@ -106,26 +106,7 @@ int main() {
 
 
 
-        // Podstawowa obsługa pada (GLFW_JOYSTICK_1)
-        if (glfwJoystickPresent(GLFW_JOYSTICK_1) && glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
-            GLFWgamepadstate state;
-            if (glfwGetGamepadState(GLFW_JOYSTICK_1, &state)) {
-                // Lewy drążek: pitch (oś Y), roll (oś X)
-                tiltInput.x = state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]; // pitch: przód/tył
-                tiltInput.y = state.axes[GLFW_GAMEPAD_AXIS_LEFT_X];  // roll: lewo/prawo
-
-                // DEADZONE
-                const float deadzone = 0.15f;
-                if (std::abs(tiltInput.x) < deadzone) tiltInput.x = 0.0f;
-                if (std::abs(tiltInput.y) < deadzone) tiltInput.y = 0.0f;
-
-
-                // Spusty: w górę (RT), w dół (LT)
-                float up = (state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] + 1.0f) / 2.0f;   // 0..1
-                float down = (state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] + 1.0f) / 2.0f;  // 0..1
-                verticalInput = up - down; // RT podnosi, LT opuszcza
-            }
-        }
+       
         
         // Obsługa klawiatury
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) tiltInput.x -= 1.0f;
