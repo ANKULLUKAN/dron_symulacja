@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
-
+#include "Object.h"
 
 void DroneController::UpdateTilt(const glm::vec2& tiltInput, const float deltaTime) {
 	// Dla ka¿dej osi: jeœli trzymasz klawisz, zwiêkszaj/zmniejszaj tilt, jeœli nie - wracaj do zera
@@ -28,6 +28,8 @@ void DroneController::UpdateTilt(const glm::vec2& tiltInput, const float deltaTi
         if (tilt[i] < -maxTilt) tilt[i] = -maxTilt;
     }
 }
+
+
 
 void DroneController::UpdatePhysics(
     glm::vec3& position,
@@ -71,6 +73,8 @@ void DroneController::UpdatePhysics(
         velocity.y = 0.0f;
         collidedWithGround = true;
     }
+
+    
 }
 
 

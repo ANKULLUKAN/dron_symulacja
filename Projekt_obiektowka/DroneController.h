@@ -4,6 +4,7 @@
 #include <numbers>
 
 
+
 // Klasa do obs³ugi sterowania dronem z p³ynnym przyspieszaniem i zwalnianiem
 class DroneController {
 public:
@@ -11,7 +12,9 @@ public:
 		: mass(mass), thrustStrength(thrustStrength), verticalThrustStrength(verticalThrustStrength), dragCoefficient(dragCoefficient) {
 	}
 
-    // Aktualny k¹t pochylenia (pitch, roll)
+
+  
+    
     glm::vec2 tilt = glm::vec2(0.0f); // [pitch, roll]
 
     // G³ówna funkcja fizyki drona
@@ -23,10 +26,10 @@ public:
         float deltaTime,
         bool& collidedWithGround
     );
-
+    float mass;
 private:
     // Parametry fizyczne
-    float mass;           // masa drona
+               // masa drona
 	float thrustStrength; // si³a ci¹gu w poziomie (np. do poruszania siê w przód/ty³)
 	float verticalThrustStrength; // si³a ci¹gu pionowego (np. do unoszenia siê w górê)
     float dragCoefficient;     // opór powietrza

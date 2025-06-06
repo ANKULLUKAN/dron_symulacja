@@ -17,6 +17,8 @@ public:
 	// Funkcja rysuj¹ca drona
 	void drawDrone(const glm::mat4& projection, const glm::mat4& view);
 
+	void addMass(float mass);
+
 	// Funkcje pomocnicze do pobierania pozycji kamery i drona oraz prêdkoœci skrzyde³
 	glm::vec3 getCameraPos();
 	glm::vec3 getDronePos();

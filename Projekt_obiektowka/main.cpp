@@ -9,24 +9,8 @@
 #include "Shader.h"
 #include "ModelLoader.h"
 #include "floor.h"
+#include "Object.h"
 
-
-
-// Wierzchołki sześcianu
-float cubeVertices[] = {
-    -0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f,  0.5f, -0.5f,
-     0.5f,  0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f, -0.5f, -0.5f,
-    -0.5f, -0.5f,  0.5f,  0.5f, -0.5f,  0.5f,  0.5f,  0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f, -0.5f,  0.5f,  0.5f, -0.5f, -0.5f,  0.5f,
-    -0.5f,  0.5f,  0.5f, -0.5f,  0.5f, -0.5f, -0.5f, -0.5f, -0.5f,
-    -0.5f, -0.5f, -0.5f, -0.5f, -0.5f,  0.5f, -0.5f,  0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f,  0.5f,  0.5f, -0.5f,  0.5f, -0.5f, -0.5f,
-     0.5f, -0.5f, -0.5f,  0.5f, -0.5f,  0.5f,  0.5f,  0.5f,  0.5f,
-    -0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f, -0.5f,  0.5f,
-     0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f, -0.5f,
-    -0.5f,  0.5f, -0.5f,  0.5f,  0.5f, -0.5f,  0.5f,  0.5f,  0.5f,
-     0.5f,  0.5f,  0.5f, -0.5f,  0.5f,  0.5f, -0.5f,  0.5f, -0.5f
-};
 
 constexpr int ellipseSegments = 40;
 float ellipseVertices[(ellipseSegments + 2) * 3];
@@ -76,6 +60,8 @@ int main() {
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
 
+	// Inicjalizacja kostki
+    Cube cube(0.1f, 0.01f);
     bool droneBroken = false;
 
     while (!glfwWindowShouldClose(window)) {
@@ -94,20 +80,6 @@ int main() {
         glm::vec2 tiltInput(0.0f);
         float verticalInput = 0.0f;
 
-
-
-
-
-
-
-
-
-
-
-
-
-       
-        
         // Obsługa klawiatury
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) tiltInput.x -= 1.0f;
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) tiltInput.x += 1.0f;
@@ -154,6 +126,17 @@ int main() {
         glDrawArrays(GL_TRIANGLE_FAN, 0, ellipseSegments + 2);
 
 		drone.drawDrone(projection, view);
+
+        
+        
+		cube.Update(1.0f / 60.0f, drone.getDronePos()); // Aktualizacja fizyki kostki;
+		cube.Draw(colorShader, view, projection);
+        int licznik = 0;
+        if (cube.contactWithDrone(drone.getDronePos()) && licznik != 1)
+        {
+			drone.addMass(cube.mass);
+            licznik++;
+        };
 
         glfwSwapBuffers(window);
     }

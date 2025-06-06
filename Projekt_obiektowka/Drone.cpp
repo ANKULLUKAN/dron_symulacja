@@ -24,6 +24,10 @@ void Drone::drawDrone(const glm::mat4& projection, const glm::mat4& view) {
         controller.tilt.x, controller.tilt.y, velocity.y);
 }
 
+void Drone::addMass(float mass) {
+    controller.mass += mass;
+};
+
 glm::vec3 Drone::getCameraPos() {
     glm::vec3 cameraOffset(0.0f, 1.0f, 2.0f);
     return position + cameraOffset;
