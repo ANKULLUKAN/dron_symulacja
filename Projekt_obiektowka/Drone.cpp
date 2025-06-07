@@ -1,4 +1,5 @@
 #include "Drone.h"
+#include "Object.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include "ModelLoader.h"
@@ -18,7 +19,7 @@ void Drone::drawDrone(const glm::mat4& projection, const glm::mat4& view, const 
     texturedShader.SetVec3("viewPos", getCameraPos());
 	int nodeCounter = 0;
     renderer.drawNodeWithRotation(rootNode, modelMatrix, texturedShader.Id, nodeCounter,
-        controller.tilt.x, controller.tilt.y, velocity.y);
+        controller.tilt.x, controller.tilt.y, controller.thrusty);
 }
 
 glm::vec3 Drone::projectToFloor(const glm::vec3& point, const glm::vec3& lightDir) {
@@ -86,9 +87,12 @@ void Drone::drawDroneShadow(const Shader& shader, const glm::mat4& projection, c
     glDeleteBuffers(1, &ibo);
 }
 
-void Drone::addMass(float mass) {
-    controller.mass += mass;
-};
+void Drone::addMass(float mass, bool was_attached) {
+    if (was_attached == true)
+    {
+            controller.added_mass += mass;          
+    }
+}
 
 glm::vec3 Drone::getCameraPos() {
     glm::vec3 cameraOffset(0.0f, 1.0f, 2.0f);
@@ -105,6 +109,7 @@ float Drone::getWingsSpeed() {
 
 void Drone::updatePhysics(glm::vec2 tiltInput, float verticalInput, bool& droneBroken) {
     controller.UpdatePhysics(position, velocity, tiltInput, verticalInput, 1/60.0f, droneBroken);
+    drone_mass = controller.whole_mass;
 }
 
 void Drone::resetDronePosition() {

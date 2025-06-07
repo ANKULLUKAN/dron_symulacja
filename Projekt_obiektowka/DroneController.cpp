@@ -27,6 +27,7 @@ void DroneController::UpdateTilt(const glm::vec2& tiltInput, const float deltaTi
         if (tilt[i] > maxTilt) tilt[i] = maxTilt;
         if (tilt[i] < -maxTilt) tilt[i] = -maxTilt;
     }
+   
 }
 
 
@@ -39,6 +40,11 @@ void DroneController::UpdatePhysics(
     const float deltaTime,
     bool& collidedWithGround
 ) {
+    
+    whole_mass = mass + added_mass;
+    
+
+	 // ca³kowita masa drona z dodan¹ mas¹ obiektów
 
     // 2. Aktualizuj tilt (pochylenie) w kierunku tiltTarget
     UpdateTilt(tiltInput, deltaTime);
@@ -49,6 +55,7 @@ void DroneController::UpdatePhysics(
         verticalInput * verticalThrustStrength,    // pionowo
         std::sin(tilt.x) * thrustStrength  // pitch -> Z
     );
+	thrusty = thrust.y;
 
     // 4. Opór powietrza (drag)
     const glm::vec3 drag = -velocity * dragCoefficient;
@@ -57,7 +64,7 @@ void DroneController::UpdatePhysics(
     const glm::vec3 force = thrust + drag;
 
     // 6. Aktualizacja prêdkoœci (F = m*a)
-    velocity += (force / mass) * deltaTime;
+    velocity += (force / whole_mass) * deltaTime;
 
     // 7. Aktualizacja pozycji
     position += velocity * deltaTime;

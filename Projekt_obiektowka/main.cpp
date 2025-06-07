@@ -35,18 +35,19 @@ int main() {
     Drone drone(glm::vec3(0.0f, 1.0f, 0.0f));
 
 	// Inicjalizacja kostki
-    Cube cube(0.1f, 0.01f);
+    Cube cube(0.1f, 1.0f);
     bool droneBroken = false;
     
 	// Ustawienie kierunku światła
-    glm::vec3 lightDir = glm::normalize(glm::vec3(-10.0f, -10.0f, -10.0f));
+    glm::vec3 lightDir = glm::normalize(glm::vec3(5.0f, -50.0f, -5.0f));
+    int counter = 0;
 
     while (!glfwWindowShouldClose(window)) {
 
         // --- Aktualizacja tytułu okna z pozycją drona ---
         char title[128];
-        snprintf(title, sizeof(title), "Dron - Pozycja: X=%.2f Y=%.2f Z=%.2f Predkosc skrzydel(obr/s): %.2f",
-            drone.getDronePos().x, drone.getDronePos().y, drone.getDronePos().z, drone.getWingsSpeed() * 150);
+        snprintf(title, sizeof(title), "Dron - Pozycja: X=%.2f Y=%.2f Z=%.2f Predkosc skrzydel(obr/s): %.2f Masa: %.2f",
+            drone.getDronePos().x, drone.getDronePos().y, drone.getDronePos().z, drone.getWingsSpeed() * 150, drone.drone_mass);
         glfwSetWindowTitle(window, title);
 
         glfwPollEvents();
@@ -100,11 +101,13 @@ int main() {
 		// --- Rysowanie kostki ---
 		cube.Update(1.0f / 60.0f, drone.getDronePos()); // Aktualizacja fizyki kostki;
 		cube.Draw(colorShader, view, projection);
-        int counter = 0;
-        if (cube.contactWithDrone(drone.getDronePos()) && counter != 1) {
-			drone.addMass(cube.mass);
+        if (counter == 0 && cube.was_attached == 1 )
+        {
+            drone.addMass(cube.mass, cube.was_attached);
             counter++;
         }
+        
+        
 
         glfwSwapBuffers(window);
     }

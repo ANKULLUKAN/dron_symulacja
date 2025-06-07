@@ -12,9 +12,10 @@ bool Cube::contactWithDrone(glm::vec3 drone_position) {
     const float epsilon = 0.1f; // granica b³êdu (promieñ kontaktu)
 
     if (distance < epsilon) {
-        contactPoint = position;
+        was_attached = true;
         return true;
     }
+    was_attached = false;
     return false;
 }
 
@@ -57,9 +58,11 @@ void Cube::setupMesh(float size) {
 
 
 void Cube::Update(float deltaTime, glm::vec3 dron_position) {
+
     if (contactWithDrone(dron_position) || attachedToDrone) {
         position = dron_position + glm::vec3(0.0f, -0.08f, 0.0f);
         attachedToDrone = true;
+        was_attached = true;
         
     }
     else {

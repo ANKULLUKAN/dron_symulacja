@@ -14,7 +14,7 @@ public:
     void Draw(const Shader& shader, const glm::mat4& view, const glm::mat4& projection);
 
 
-    glm::vec3 contactPoint;
+    bool  was_attached;
     glm::vec3 position;
     glm::vec3 velocity;
     float mass;

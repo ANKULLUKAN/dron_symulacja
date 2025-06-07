@@ -23,10 +23,13 @@ public:
         float deltaTime,
         bool& collidedWithGround
     );
-    float mass;
+    
+    float thrusty;
+    float added_mass;
+    float whole_mass;
 private:
     // Parametry fizyczne
-               // masa drona
+    float mass;       // masa drona
 	float thrustStrength; // si³a ci¹gu w poziomie (np. do poruszania siê w przód/ty³)
 	float verticalThrustStrength; // si³a ci¹gu pionowego (np. do unoszenia siê w górê)
     float dragCoefficient;     // opór powietrza

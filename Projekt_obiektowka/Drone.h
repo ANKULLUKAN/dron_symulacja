@@ -35,7 +35,7 @@ public:
 
 
 	// Funkcja dodaj¹ca masê do drona (np. po kolizji z obiektem)
-	void addMass(float mass);
+	void addMass(float mass,bool was_attached);
 
 	// Funkcje pomocnicze do pobierania pozycji kamery i drona oraz prêdkoœci skrzyde³
 	glm::vec3 getCameraPos();
@@ -47,6 +47,9 @@ public:
 
 	// Resetuje pozycjê drona do domyœlnej
 	void resetDronePosition();
+
+	
+	float drone_mass;
 
 private:
 	Shader texturedShader;
