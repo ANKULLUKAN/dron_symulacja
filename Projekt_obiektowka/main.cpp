@@ -41,7 +41,7 @@ int main() {
 	// Ustawienie kierunku światła
     glm::vec3 lightDir = glm::normalize(glm::vec3(5.0f, -50.0f, -5.0f));
     int counter = 0;
-
+    bool contact = 0;
     while (!glfwWindowShouldClose(window)) {
 
         // --- Aktualizacja tytułu okna z pozycją drona ---
@@ -97,9 +97,11 @@ int main() {
 		// --- Rysowanie drona i jego cienia ---
         drone.drawDroneShadow(colorShader, projection, view, lightDir);
 		drone.drawDrone(projection, view, lightDir);
-
+        
+        if ((glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)) contact = 1;
+        if ((glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)) contact = 0;
 		// --- Rysowanie kostki ---
-		cube.Update(1.0f / 60.0f, drone.getDronePos()); // Aktualizacja fizyki kostki;
+		cube.Update(1.0f / 60.0f, drone.getDronePos(),contact); // Aktualizacja fizyki kostki;
 		cube.Draw(colorShader, view, projection);
         if (counter == 0 && cube.was_attached == 1 )
         {

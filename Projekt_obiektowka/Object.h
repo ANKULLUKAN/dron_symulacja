@@ -10,7 +10,7 @@ public:
     ~Cube();
 
     bool contactWithDrone(glm::vec3 dron_position);
-    void Update(float deltaTime, glm::vec3 dron_position);
+    void Update(float deltaTime, glm::vec3 dron_position, bool contact);
     void Draw(const Shader& shader, const glm::mat4& view, const glm::mat4& projection);
 
 

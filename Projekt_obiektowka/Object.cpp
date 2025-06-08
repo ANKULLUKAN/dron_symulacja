@@ -57,9 +57,9 @@ void Cube::setupMesh(float size) {
 }
 
 
-void Cube::Update(float deltaTime, glm::vec3 dron_position) {
+void Cube::Update(float deltaTime, glm::vec3 dron_position, bool contact) {
 
-    if (contactWithDrone(dron_position) || attachedToDrone) {
+    if ((contactWithDrone(dron_position) || attachedToDrone) && contact == 1) {
         position = dron_position + glm::vec3(0.0f, -0.08f, 0.0f);
         attachedToDrone = true;
         was_attached = true;
