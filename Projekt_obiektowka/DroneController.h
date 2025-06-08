@@ -24,7 +24,7 @@ public:
         bool& collidedWithGround
     );
     
-    float thrusty;
+    float thrust_y;
     float added_mass;
     float whole_mass;
 private:

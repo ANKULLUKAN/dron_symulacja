@@ -55,7 +55,7 @@ void DroneController::UpdatePhysics(
         verticalInput * verticalThrustStrength,    // pionowo
         std::sin(tilt.x) * thrustStrength  // pitch -> Z
     );
-	thrusty = thrust.y;
+	thrust_y = thrust.y;
 
     // 4. Opór powietrza (drag)
     const glm::vec3 drag = -velocity * dragCoefficient;

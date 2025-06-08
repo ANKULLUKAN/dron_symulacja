@@ -19,7 +19,7 @@ void Drone::drawDrone(const glm::mat4& projection, const glm::mat4& view, const 
     texturedShader.SetVec3("viewPos", getCameraPos());
 	int nodeCounter = 0;
     renderer.drawNodeWithRotation(rootNode, modelMatrix, texturedShader.Id, nodeCounter,
-        controller.tilt.x, controller.tilt.y, controller.thrusty);
+        controller.tilt.x, controller.tilt.y, controller.thrust_y);
 }
 
 glm::vec3 Drone::projectToFloor(const glm::vec3& point, const glm::vec3& lightDir) {
