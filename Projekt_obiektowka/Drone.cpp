@@ -5,6 +5,7 @@
 #include "ModelLoader.h"
 #include "rotation.h"
 
+// Wektor wierzcho³ków drona
 void Drone::drawDrone(const Shader& texturedShader, const glm::mat4& projection, const glm::mat4& view, const glm::vec3 lightDir) {
 
     // --- Model drona ---
@@ -22,12 +23,14 @@ void Drone::drawDrone(const Shader& texturedShader, const glm::mat4& projection,
         controller.tilt.x, controller.tilt.y, controller.thrust_y);
 }
 
+// Funkcja rzutuj¹ca punkt na pod³ogê w kierunku œwiat³a
 glm::vec3 Drone::projectToFloor(const glm::vec3& point, const glm::vec3& lightDir) {
     // Rzutuj punkt w kierunku œwiat³a na p³aszczyznê y=0
     float t = -point.y / lightDir.y;
     return point + t * lightDir;
 }
 
+// Funkcja generuj¹ca siatkê cienia drona
 void Drone::generateDroneShadowMesh(const glm::mat4& modelMatrix, const glm::vec3& lightDir) {
     shadowVertices.clear();
     for (const auto& v : droneVertices) {
@@ -41,6 +44,7 @@ void Drone::generateDroneShadowMesh(const glm::mat4& modelMatrix, const glm::vec
     shadowIndices = droneIndices;
 }
 
+// Funkcja rysuj¹ca cieñ drona
 void Drone::drawDroneShadow(const Shader& shader, const glm::mat4& projection, const glm::mat4& view, const glm::vec3& lightDir) {
     // Macierz modelu drona (pozycja, rotacja, skala)
     glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), position);
@@ -97,31 +101,49 @@ void Drone::drawDroneShadow(const Shader& shader, const glm::mat4& projection, c
     glDeleteBuffers(1, &ibo);
 }
 
+// Funkcja aktualizuj¹ca masê drona
 void Drone::updateMass(float mass) {
 	controller.added_mass += mass;          
 }
 
-glm::vec3 Drone::getCameraPos() {
+// Funkcja zwracaj¹ca pozycjê kamery drona
+glm::vec3 Drone::getCameraPos() const {
     glm::vec3 cameraOffset(0.0f, 1.0f, 2.0f);
     return position + cameraOffset;
 };
 
-glm::vec3 Drone::getDronePos() {
+// Funkcja zwracaj¹ca pozycjê drona
+glm::vec3 Drone::getDronePos() const {
     return position;
 };
 
-float Drone::getWingsSpeed() {
+// Funkcja zwracaj¹ca prêdkoœæ drona
+glm::vec3 Drone::getDroneVelocity() const {
+	return velocity;
+}
+
+// Funkcja zwracaj¹ca masê drona
+float Drone::getDroneMass() const {
+	return drone_mass;
+}
+
+// Funkcja zwracaj¹ca przechylenie drona
+glm::vec2 Drone::getDroneTilt() const {
+    return controller.tilt;
+}
+
+// Funkcja zwracaj¹ca prêdkoœæ skrzyde³ drona
+float Drone::getWingsSpeed() const {
 	return renderer.wings_speed; 
 }
 
+// Aktualizacja fizyki drona na podstawie wejœcia z klawiatury
 void Drone::updatePhysics(glm::vec2 tiltInput, float verticalInput, bool& droneBroken, float deltaTime) {
-    controller.UpdatePhysics(position, velocity, tiltInput, verticalInput, deltaTime, droneBroken);
-    drone_mass = controller.whole_mass;
-    tilt_x = controller.tilt_x;
-	tilt_y = controller.tilt_y;
-	 // Aktualizacja prêdkoœci drona z kontrolera
+	controller.UpdatePhysics(position, velocity, tiltInput, verticalInput, deltaTime, droneBroken); // aktualizacja fizyki drona
+	drone_mass = controller.whole_mass; // aktualizacja masy drona+klocka
 }
 
+// Funkcja resetuj¹ca pozycjê drona do domyœlnej
 void Drone::resetDronePosition() {
     position = glm::vec3(0.0f, 1.0f, 0.0f);
     velocity = glm::vec3(0.0f);

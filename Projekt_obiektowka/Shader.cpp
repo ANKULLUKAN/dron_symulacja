@@ -77,6 +77,7 @@ GLuint Shader::CompileShader(const GLenum type, const char* source) {
     return shader;
 }
 
+// £aduje Ÿród³o shadera z pliku i zwraca jako string
 std::string Shader::LoadShaderSource(const std::string& filename) {
 	const std::ifstream file(filename);
     std::stringstream buffer;

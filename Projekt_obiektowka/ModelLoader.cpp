@@ -110,12 +110,6 @@ bool LoadModel(const std::string& path) {
                             }
                         }
                     }
-                    else {
-                        // Zwykła tekstura z pliku
-                        std::string dir = path.substr(0, path.find_last_of("/\\"));
-                        std::string fullPath = dir + "/" + texPath.C_Str();
-                        myMesh.textureID = LoadTexture(fullPath);
-                    }
                 }
             }
         }
@@ -144,6 +138,7 @@ bool LoadModel(const std::string& path) {
     return true;
 }
 
+// Ładowanie tekstury z pamięci (np. osadzonej w pliku GLTF) przy użyciu stb_image
 GLuint LoadTextureFromMemory(const unsigned char* data, const int size) {
     int width, height, nrChannels;
     unsigned char* imgData = stbi_load_from_memory(data, size, &width, &height, &nrChannels, 0);
@@ -165,30 +160,5 @@ GLuint LoadTextureFromMemory(const unsigned char* data, const int size) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     stbi_image_free(imgData);
-    return texture;
-}
-
-// Ładowanie tekstury z pliku przy użyciu stb_image
-GLuint LoadTexture(const std::string& path) {
-    int width, height, nrChannels;
-    unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
-    if (!data) {
-        std::cerr << "Failed to load texture: " << path << '\n';
-        return 0;
-    }
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    const GLenum format = nrChannels == 4 ? GL_RGBA : GL_RGB;
-    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    stbi_image_free(data);
     return texture;
 }

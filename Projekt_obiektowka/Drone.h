@@ -11,8 +11,8 @@ class Drone {
 public:
 	// Konstruktor: inicjalizuje shader, pozycjê i kontroler drona
 	Drone(const glm::vec3& startPosition)
-		:position(startPosition),
-	velocity(0.0f), controller(0.1f, 0.02f, 0.2f, 1.0f), renderer(NodeRenderer(meshes)) {
+		:position(startPosition), velocity(0.0f), controller(0.1f, 0.02f, 0.2f, 1.0f),
+		renderer(NodeRenderer(meshes)) {
 
 		if (!meshes.empty()) {
 			droneVertices.clear();
@@ -36,10 +36,13 @@ public:
 	// Funkcja aktualizuj¹ca masê do drona
 	void updateMass(float mass);
 
-	// Funkcje pomocnicze do pobierania pozycji kamery i drona oraz prêdkoœci skrzyde³
-	glm::vec3 getCameraPos();
-	glm::vec3 getDronePos();
-	float getWingsSpeed();
+	// Funkcje zwracaj¹ce ró¿ne w³aœciwoœci drona
+	glm::vec3 getCameraPos() const;
+	glm::vec3 getDronePos() const;
+	glm::vec3 getDroneVelocity() const;
+	glm::vec2 getDroneTilt() const;
+	float getDroneMass() const;
+	float getWingsSpeed() const;
 
 	// Aktualizuje fizykê drona na podstawie wejœcia z kontrolera
 	void updatePhysics(glm::vec2 tiltInput, float verticalInput, bool& droneBroken, float deltaTime);
@@ -47,18 +50,18 @@ public:
 	// Resetuje pozycjê drona do domyœlnej
 	void resetDronePosition();
 
-	float drone_mass;
-	glm::vec3 velocity;
-	float tilt_x;
-	float tilt_y;
+	
+	
 private:
 	glm::vec3 position; // Pozycja drona
-	// Prêdkoœæ drona
+	glm::vec3 velocity; // Prêdkoœæ drona
+	float drone_mass; // Masa drona
+
 	DroneController controller; // Kontroler drona
 	NodeRenderer renderer; // Renderer wêz³ów (do animacji skrzyde³ek i innych elementów)
 
-	std::vector<glm::vec3> droneVertices;
-	std::vector<unsigned int> droneIndices;
-	std::vector<glm::vec3> shadowVertices;
-	std::vector<unsigned int> shadowIndices;
+	std::vector<glm::vec3> droneVertices; // Wierzcho³ki modelu drona
+	std::vector<unsigned int> droneIndices; // Indeksy modelu drona
+	std::vector<glm::vec3> shadowVertices; // Wierzcho³ki cienia drona
+	std::vector<unsigned int> shadowIndices; //	Indeksy cienia drona
 };
