@@ -23,7 +23,8 @@ public:
         float deltaTime,
         bool& collidedWithGround
     );
-    
+    float tilt_x;
+	float tilt_y;
     float thrust_y;
     float added_mass;
     float whole_mass;

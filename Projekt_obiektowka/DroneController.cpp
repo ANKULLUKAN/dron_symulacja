@@ -41,7 +41,8 @@ void DroneController::UpdatePhysics(
     bool& collidedWithGround) {
     
     whole_mass = mass + added_mass;
-
+	tilt_x = tilt.x; 
+	tilt_y = tilt.y; 
 	 // ca³kowita masa drona z dodan¹ mas¹ obiektów
 
     // 2. Aktualizuj tilt (pochylenie) w kierunku tiltTarget

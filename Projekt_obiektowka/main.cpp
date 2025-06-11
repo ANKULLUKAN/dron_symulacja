@@ -37,7 +37,7 @@ int main() {
     bool droneBroken = false;
 
 	// Inicjalizacja kostki
-    Cube cube(0.1f, 5.0f);
+    Cube cube(0.1f, 1.0f);
     bool attached = false;
 
 	// Inicjalizacja podłogi
@@ -70,10 +70,11 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) verticalInput -= 1.0f;
 
 		// Przełączanie kontaktu z kostką i aktualizacja masy drona
+        cube.checkContactWithDrone(drone.getDronePos(), droneBroken);
         static bool prevEPressed = false;
         bool ePressed = (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS);
         if (ePressed && !prevEPressed) {
-            if (cube.checkContactWithDrone(drone.getDronePos()) || attached) {
+            if (cube.checkContactWithDrone(drone.getDronePos(), droneBroken) || attached) {
                 attached = !attached; // przełącz
                 if (attached) {
                     drone.updateMass(cube.mass); // przyczepienie
@@ -87,7 +88,7 @@ int main() {
 
 		// --- Aktualizacja fizyki drona i kostki---
         drone.updatePhysics(tiltInput, verticalInput, droneBroken, deltaTime);
-        cube.Update(deltaTime, drone.getDronePos(), attached); // Aktualizacja fizyki kostki;
+        cube.Update(deltaTime, drone.getDronePos(), attached, drone.velocity); // Aktualizacja fizyki kostki;
 
 		// --- Sprawdzenie kolizji z podłogą ---
         if (droneBroken) {
@@ -101,7 +102,7 @@ int main() {
                     break; // wyjdź z pętli, aby kontynuować
                 }
                 if (!messageShown) {
-                    MessageBoxA(nullptr, "Kolizja z podłogą! Wciśnij R, aby zresetować drona.", "Kolizja", MB_OK | MB_ICONWARNING);
+                    MessageBoxA(nullptr, "Kolizja! Wciśnij R, aby zresetować drona.", "Kolizja", MB_OK | MB_ICONWARNING);
                     messageShown = true; // pokaż komunikat tylko raz
                 }
             }
@@ -124,7 +125,7 @@ int main() {
 
 		// --- Rysowanie kostki ---
 		
-		cube.Draw(colorShader, view, projection);
+		cube.Draw(colorShader, view, projection, drone.tilt_x,drone.tilt_y);
 
         glfwSwapBuffers(window);
     }

@@ -48,10 +48,12 @@ public:
 	void resetDronePosition();
 
 	float drone_mass;
-
+	glm::vec3 velocity;
+	float tilt_x;
+	float tilt_y;
 private:
 	glm::vec3 position; // Pozycja drona
-	glm::vec3 velocity; // Prêdkoœæ drona
+	// Prêdkoœæ drona
 	DroneController controller; // Kontroler drona
 	NodeRenderer renderer; // Renderer wêz³ów (do animacji skrzyde³ek i innych elementów)
 

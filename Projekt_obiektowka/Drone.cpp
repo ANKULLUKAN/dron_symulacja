@@ -117,6 +117,9 @@ float Drone::getWingsSpeed() {
 void Drone::updatePhysics(glm::vec2 tiltInput, float verticalInput, bool& droneBroken, float deltaTime) {
     controller.UpdatePhysics(position, velocity, tiltInput, verticalInput, deltaTime, droneBroken);
     drone_mass = controller.whole_mass;
+    tilt_x = controller.tilt_x;
+	tilt_y = controller.tilt_y;
+	 // Aktualizacja prêdkoœci drona z kontrolera
 }
 
 void Drone::resetDronePosition() {
