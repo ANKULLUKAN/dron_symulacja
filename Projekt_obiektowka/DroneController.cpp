@@ -32,17 +32,15 @@ void DroneController::UpdateTilt(const glm::vec2& tiltInput, const float deltaTi
 
 
 
-void DroneController::UpdatePhysics(
+void DroneController::UpdatePhysics(   
     glm::vec3& position,
     glm::vec3& velocity,
     const glm::vec2& tiltInput,
     const float verticalInput,
     const float deltaTime,
-    bool& collidedWithGround
-) {
+    bool& collidedWithGround) {
     
     whole_mass = mass + added_mass;
-    
 
 	 // ca³kowita masa drona z dodan¹ mas¹ obiektów
 
@@ -80,8 +78,6 @@ void DroneController::UpdatePhysics(
         velocity.y = 0.0f;
         collidedWithGround = true;
     }
-
-    
 }
 
 

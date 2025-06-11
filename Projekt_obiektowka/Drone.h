@@ -11,7 +11,7 @@ class Drone {
 public:
 	// Konstruktor: inicjalizuje shader, pozycjê i kontroler drona
 	Drone(const glm::vec3& startPosition)
-		:texturedShader(Shader("shader/texture.vert", "shader/texture.frag")), position(startPosition),
+		:position(startPosition),
 	velocity(0.0f), controller(0.1f, 0.02f, 0.2f, 1.0f), renderer(NodeRenderer(meshes)) {
 
 		if (!meshes.empty()) {
@@ -24,7 +24,7 @@ public:
 	}
 
 	// Funkcja rysuj¹ca drona
-	void drawDrone(const glm::mat4& projection, const glm::mat4& view, const glm::vec3 lightDir);
+	void drawDrone(const Shader& texturedShader, const glm::mat4& projection, const glm::mat4& view, const glm::vec3 lightDir);
 
 	// Funkcja rysuj¹ca cieñ drona (elipsa)
 	void drawDroneShadow(const Shader& shader, const glm::mat4& projection, const glm::mat4& view) const;
@@ -33,9 +33,8 @@ public:
 	void drawDroneShadow(const Shader& shader, const glm::mat4& projection,
 		const glm::mat4& view, const glm::vec3& lightDir);
 
-
-	// Funkcja dodaj¹ca masê do drona (np. po kolizji z obiektem)
-	void addMass(float mass,bool was_attached);
+	// Funkcja aktualizuj¹ca masê do drona
+	void updateMass(float mass);
 
 	// Funkcje pomocnicze do pobierania pozycji kamery i drona oraz prêdkoœci skrzyde³
 	glm::vec3 getCameraPos();
@@ -43,16 +42,14 @@ public:
 	float getWingsSpeed();
 
 	// Aktualizuje fizykê drona na podstawie wejœcia z kontrolera
-	void updatePhysics(glm::vec2 tiltInput, float verticalInput, bool& droneBroken);
+	void updatePhysics(glm::vec2 tiltInput, float verticalInput, bool& droneBroken, float deltaTime);
 
 	// Resetuje pozycjê drona do domyœlnej
 	void resetDronePosition();
 
-	
 	float drone_mass;
 
 private:
-	Shader texturedShader;
 	glm::vec3 position; // Pozycja drona
 	glm::vec3 velocity; // Prêdkoœæ drona
 	DroneController controller; // Kontroler drona

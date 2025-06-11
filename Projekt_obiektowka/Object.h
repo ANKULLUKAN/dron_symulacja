@@ -9,19 +9,17 @@ public:
     Cube(float size, float mass);
     ~Cube();
 
-    bool contactWithDrone(glm::vec3 dron_position);
-    void Update(float deltaTime, glm::vec3 dron_position, bool contact);
-    void Draw(const Shader& shader, const glm::mat4& view, const glm::mat4& projection);
+    bool checkContactWithDrone(glm::vec3 dronePosition);
+    void Update(float deltaTime, glm::vec3 dronePosition, bool contact);
+    void Draw(const Shader& shader, const glm::mat4& view, const glm::mat4& projection) const;
 
-
-    bool  was_attached;
+	bool attachedToDrone = false;
     glm::vec3 position;
     glm::vec3 velocity;
     float mass;
-  
 
 private:
     void setupMesh(float size);
     unsigned int VAO, VBO;
-    bool attachedToDrone = false;
+    
 };

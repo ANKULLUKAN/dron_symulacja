@@ -5,7 +5,7 @@
 #include "ModelLoader.h"
 #include "rotation.h"
 
-void Drone::drawDrone(const glm::mat4& projection, const glm::mat4& view, const glm::vec3 lightDir) {
+void Drone::drawDrone(const Shader& texturedShader, const glm::mat4& projection, const glm::mat4& view, const glm::vec3 lightDir) {
 
     // --- Model drona ---
     glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), position);
@@ -47,6 +47,16 @@ void Drone::drawDroneShadow(const Shader& shader, const glm::mat4& projection, c
     // Wygeneruj siatkê cienia
     generateDroneShadowMesh(modelMatrix, lightDir);
 
+    // Wyznacz œrodek cienia
+    glm::vec3 center = glm::vec3(position.x, 0.0f, position.z);
+
+
+    // Przeskaluj cieñ wzglêdem œrodka
+    float shadowScale = 0.1f; // np. 60% oryginalnego rozmiaru
+    for (auto& v : shadowVertices) {
+        v = center + shadowScale * (v - center);
+    }
+
     // Zamieñ shadowVertices na tablicê floatów
     std::vector<float> shadowVerticesFlat;
     for (const auto& v : shadowVertices) {
@@ -64,7 +74,7 @@ void Drone::drawDroneShadow(const Shader& shader, const glm::mat4& projection, c
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, shadowVerticesFlat.size() * sizeof(float), shadowVerticesFlat.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
     glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -79,7 +89,7 @@ void Drone::drawDroneShadow(const Shader& shader, const glm::mat4& projection, c
 
     // Rysowanie cienia
     glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(shadowIndices.size()), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(shadowIndices.size()), GL_UNSIGNED_INT, nullptr);
 
     // Sprz¹tanie
     glDeleteVertexArrays(1, &vao);
@@ -87,11 +97,8 @@ void Drone::drawDroneShadow(const Shader& shader, const glm::mat4& projection, c
     glDeleteBuffers(1, &ibo);
 }
 
-void Drone::addMass(float mass, bool was_attached) {
-    if (was_attached == true)
-    {
-            controller.added_mass += mass;          
-    }
+void Drone::updateMass(float mass) {
+	controller.added_mass += mass;          
 }
 
 glm::vec3 Drone::getCameraPos() {
@@ -107,8 +114,8 @@ float Drone::getWingsSpeed() {
 	return renderer.wings_speed; 
 }
 
-void Drone::updatePhysics(glm::vec2 tiltInput, float verticalInput, bool& droneBroken) {
-    controller.UpdatePhysics(position, velocity, tiltInput, verticalInput, 1/60.0f, droneBroken);
+void Drone::updatePhysics(glm::vec2 tiltInput, float verticalInput, bool& droneBroken, float deltaTime) {
+    controller.UpdatePhysics(position, velocity, tiltInput, verticalInput, deltaTime, droneBroken);
     drone_mass = controller.whole_mass;
 }
 

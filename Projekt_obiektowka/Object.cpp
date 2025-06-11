@@ -7,16 +7,12 @@ Cube::Cube(float size, float mass)
     setupMesh(size);
 }
 
-bool Cube::contactWithDrone(glm::vec3 drone_position) {
-    float distance = glm::length(position - drone_position);
-    const float epsilon = 0.1f; // granica b³êdu (promieñ kontaktu)
+bool Cube::checkContactWithDrone(const glm::vec3 dronePosition) {
+	const float distance = glm::length(position - dronePosition);
+    constexpr float epsilon = 0.1f; // granica b³êdu (promieñ kontaktu)
 
-    if (distance < epsilon) {
-        was_attached = true;
-        return true;
-    }
-    was_attached = false;
-    return false;
+    if (distance < epsilon) return true;
+	return false;
 }
 
 Cube::~Cube() {
@@ -24,7 +20,7 @@ Cube::~Cube() {
     glDeleteBuffers(1, &VBO);
 }
 
-void Cube::setupMesh(float size) {
+void Cube::setupMesh(const float size) {
     float h = size / 2.0f;
     float vertices[] = {
         // Ty³
@@ -57,19 +53,15 @@ void Cube::setupMesh(float size) {
 }
 
 
-void Cube::Update(float deltaTime, glm::vec3 dron_position, bool contact) {
+void Cube::Update(const float deltaTime, const glm::vec3 dronePosition, const bool contact) {
 
-    if ((contactWithDrone(dron_position) || attachedToDrone) && contact == 1) {
-        position = dron_position + glm::vec3(0.0f, -0.08f, 0.0f);
-        attachedToDrone = true;
-        was_attached = true;
-        
+    if (contact) {
+        position = dronePosition + glm::vec3(0.0f, -0.1f, 0.0f);
     }
     else {
-        const float gravity = -9.81f;
+        constexpr float gravity = -9.81f;
         velocity.y += gravity * deltaTime;
 
-      
         if (position.y + velocity.y * deltaTime < 0.1f) {
             position.y = 0.1f;
             velocity.y = 0.0f;
@@ -78,9 +70,10 @@ void Cube::Update(float deltaTime, glm::vec3 dron_position, bool contact) {
             position += velocity * deltaTime;
         }
     }
+
 }
 
-void Cube::Draw(const Shader& shader, const glm::mat4& view, const glm::mat4& projection) {
+void Cube::Draw(const Shader& shader, const glm::mat4& view, const glm::mat4& projection) const {
     shader.Use();
     shader.SetMat4("view", view);
     shader.SetMat4("projection", projection);
