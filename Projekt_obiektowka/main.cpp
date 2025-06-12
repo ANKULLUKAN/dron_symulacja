@@ -18,7 +18,7 @@ int main() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dron", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1600, 900, "Inicjalizacja Modelu Drona", nullptr, nullptr);
     glfwMakeContextCurrent(window);
     gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress));
     glEnable(GL_DEPTH_TEST);
@@ -44,7 +44,7 @@ int main() {
     Floor floor(10,10);
 
 	// Ustawienie kierunku światła
-    glm::vec3 lightDir = glm::normalize(glm::vec3(-0.3f, -1.0f, -0.3f));
+    glm::vec3 lightDir = glm::normalize(glm::vec3(-0.0f, -1.0f, -0.0f));
 
 	// Ustawienie początkowej pozycji kamery
 	float deltaTime = 1/60.0f;
@@ -53,8 +53,11 @@ int main() {
 
         // --- Aktualizacja tytułu okna z pozycją drona ---
         char title[128];
-        snprintf(title, sizeof(title), "Pozycja: X=%.2f Y=%.2f Z=%.2f Predkosc skrzydel(obr/s): %.2f Masa: %.2f",
-            drone.getDronePos().x, drone.getDronePos().y, drone.getDronePos().z, drone.getWingsSpeed() * 150, drone.getDroneMass());
+        snprintf(title, sizeof(title),
+            "Pozycja: X=%.2f Y=%.2f Z=%.2f   Predkosc skrzydel(obr/s): %.2f   Masa: %.2f   Kostka przypieta: %s",
+            drone.getDronePos().x, drone.getDronePos().y, drone.getDronePos().z,
+            drone.getWingsSpeed() * 150, drone.getDroneMass(), attached ? "Tak" : "Nie");
+
     	glfwSetWindowTitle(window, title);
 
 		glfwPollEvents(); // przetwarzanie zdarzeń
@@ -69,12 +72,16 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) tiltInput.y += 1.0f;
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) verticalInput += 1.0f;
         if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) verticalInput -= 1.0f;
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+			glfwSetWindowShouldClose(window, true); // zamknięcie okna
+		}
 
 		// --- Aktualizacja fizyki drona ---
         drone.updatePhysics(tiltInput, verticalInput, droneBroken, deltaTime);
 
         // --- Sprawdzenie kolizji z podłogą ---
         if (droneBroken) {
+            glfwSetWindowTitle(window, "Dron uszkodzony! Wcisnij R, aby zresetowac drona.");
             static bool messageShown = false;
             while (1 > 0) {
                 glfwPollEvents();

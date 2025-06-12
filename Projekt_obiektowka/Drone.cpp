@@ -65,7 +65,7 @@ void Drone::drawDroneShadow(const Shader& shader, const glm::mat4& projection, c
     std::vector<float> shadowVerticesFlat;
     for (const auto& v : shadowVertices) {
         shadowVerticesFlat.push_back(v.x);
-        shadowVerticesFlat.push_back(v.y + 0.01f); // lekko nad pod³og¹, by nie migota³o
+        shadowVerticesFlat.push_back(v.y + 0.0001f); // lekko nad pod³og¹, by nie migota³o
         shadowVerticesFlat.push_back(v.z);
     }
 
