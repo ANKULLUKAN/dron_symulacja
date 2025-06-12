@@ -1,4 +1,18 @@
-﻿#include <glad/glad.h>
+﻿
+/*
+
+   Autorzy: Łukasz Mroczek 198146, Łukasz Orluk 197641
+   Data: 11.06.2025
+   Opis: Program inicjalizuje model drona, umożliwia jego sterowanie i interakcję z otoczeniem.
+ 
+   Struktura plików i reszta niezbędnych do uruchomienia bibliotek znajduje się na githubie:
+   https://github.com/ANKULLUKAN/dron_symulacja
+
+   Do uruchomienia programu wymagany jest plik dll z biblioteki assimp, który znajduje się w folderze libraries/assimp.
+
+*/
+
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
